@@ -6,16 +6,18 @@ const SAMPLE_MARKDOWN = `# Tylike
 
 Bu bir **markdown editörü**. Yazmaya _başla_.
 
-## Kısayollar
+## Temel Mark'lar
 
-- Heading: \`Ctrl+1\` … \`Ctrl+6\`, paragraph: \`Ctrl+0\`
-- Bold \`Ctrl+B\`, italic \`Ctrl+I\`, code \`Ctrl+\\\`\`
-- Quote: \`Ctrl+Shift+Q\`, bullet list: \`Ctrl+Shift+8\`, numbered: \`Ctrl+Shift+7\`
-- Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
+- **Bold**, _italic_, \`inline code\`, [link](https://example.com)
 
-## Typing Rules
+## Yeni Mark'lar (Adım 1)
 
-\`#\` ile başlık, \`>\` blockquote, \`-\` veya \`*\` liste, \`1.\` numaralı liste.
+- ~~Üstü çizili~~ metin
+- ==Vurgulanmış== metin (highlight)
+- Kimya altyazısı: H~2~O ve CO~2~
+- Matematik üst yazısı: x^2^ ve E = mc^2^
+
+## Block Elementler
 
 > Markdown'u WYSIWYG olarak gör. Sembolleri yazınca otomatik dönüşür.
 
@@ -24,6 +26,15 @@ function hello() {
   return "world";
 }
 \`\`\`
+
+---
+
+## Kısayollar
+
+- Heading: \`Ctrl+1\` … \`Ctrl+6\`, paragraph: \`Ctrl+0\`
+- Bold \`Ctrl+B\`, italic \`Ctrl+I\`
+- Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+8\`, numbered: \`Ctrl+Shift+7\`
+- Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;
 
 function App() {

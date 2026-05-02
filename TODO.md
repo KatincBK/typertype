@@ -16,7 +16,7 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 
 | # | Adım | Süre | Durum |
 |---|---|---|---|
-| 1 | Schema genişletme: strikethrough, highlight, sub, sup mark'ları | 30 dk | [ ] |
+| 1 | Schema genişletme: strikethrough, highlight, sub, sup, underline mark'ları | 30 dk | [x] |
 | 2 | Yeni inline typing rules: `~~`, `==`, `~sub~`, `^sup^` | 30 dk | [ ] |
 | 3 | A tercihi: block trigger Enter ile (heading/quote/list/code) + code block çıkış UX | 1 saat | [ ] |
 | 4 | Klavye kısayolları Typora ile birebir eşle | 1 saat | [ ] |

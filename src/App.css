@@ -129,6 +129,36 @@ body,
   text-decoration: underline;
 }
 
+.editor .ProseMirror s,
+.editor .ProseMirror del {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.editor .ProseMirror mark {
+  background: rgba(255, 230, 0, 0.5);
+  padding: 0 0.15em;
+  border-radius: 2px;
+}
+
+.editor .ProseMirror sub,
+.editor .ProseMirror sup {
+  font-size: 0.75em;
+  line-height: 0;
+}
+
+.editor .ProseMirror sub {
+  vertical-align: sub;
+}
+
+.editor .ProseMirror sup {
+  vertical-align: super;
+}
+
+.editor .ProseMirror u {
+  text-decoration: underline;
+}
+
 .error-boundary {
   padding: 2rem;
   font-family: system-ui, sans-serif;

@@ -8,6 +8,7 @@ import { schema } from "./schema";
 import { docToMarkdown, markdownToDoc } from "./serializer";
 import { buildKeymap } from "./keymap";
 import { buildInputRules } from "./inputRules";
+import { buildLiveFormatPlugin } from "./liveFormat";
 import { logger } from "@/lib/logger";
 
 import "prosemirror-view/style/prosemirror.css";
@@ -29,6 +30,7 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
       doc: markdownToDoc(initialMarkdown),
       plugins: [
         buildInputRules(schema),
+        buildLiveFormatPlugin(schema),
         buildKeymap(schema),
         keymap(baseKeymap),
         history(),
@@ -37,10 +39,6 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
 
     const view = new EditorView(containerRef.current, {
       state,
-      handleTextInput(_view, _from, _to, text) {
-        logger.debug("[Editor] textInput:", JSON.stringify(text));
-        return false;
-      },
       dispatchTransaction(tr) {
         const next = view.state.apply(tr);
         view.updateState(next);
@@ -50,11 +48,11 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
       },
     });
 
-    logger.info("[Editor] mounted, plugins:", state.plugins.length);
+    logger.info("Editor mounted with", state.plugins.length, "plugins");
 
     return () => {
       view.destroy();
-      logger.info("[Editor] destroyed");
+      logger.info("Editor destroyed");
     };
   }, [initialMarkdown]);
 

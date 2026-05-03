@@ -17,7 +17,7 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 | # | Adım | Süre | Durum |
 |---|---|---|---|
 | 1 | Schema genişletme: strikethrough, highlight, sub, sup, underline mark'ları | 30 dk | [x] |
-| 2 | Yeni inline typing rules: `~~`, `==`, `~sub~`, `^sup^` | 30 dk | [ ] |
+| 2 | Yeni inline typing rules: `~~`, `==`, `~sub~`, `^sup^` (live-format plugin) | 30 dk | [x] |
 | 3 | A tercihi: block trigger Enter ile (heading/quote/list/code) + code block çıkış UX | 1 saat | [ ] |
 | 4 | Klavye kısayolları Typora ile birebir eşle | 1 saat | [ ] |
 | 5 | Auto-Pair plugin (brackets, quotes, markdown chars) | 1 saat | [ ] |
@@ -27,7 +27,8 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 | 9 | Mermaid diyagramlar (`\`\`\`mermaid`) | 1.5 saat | [ ] |
 | 10 | Interactive tablo: focus toolbar + drag resize | 3 saat | [ ] |
 | 11 | Footnote (`[^1]`) + TOC (`[toc]`) rendering | 1.5 saat | [ ] |
-| 12 | Source vs Rendered toggle UX (cursor on element → source) | 1.5 saat | [ ] |
+| 12a | ~~Live conversion (`appendTransaction` ile her değişiklikte pattern tarama)~~ | — | [x] (Adım 2 ile birlikte) |
+| 12b | Source vs Rendered toggle UX (cursor on element → markdown source görünür) | 1.5 saat | [ ] |
 | 13 | Custom shortcut config (`%APPDATA%\Tylike\conf\conf.user.json`) | 1 saat | [ ] |
 
 **Toplam ~17 saat** çekirdek kod. Detaylar `CONTROLS.md`'de.

@@ -1,5 +1,4 @@
 import {
-  InputRule,
   inputRules,
   textblockTypeInputRule,
   wrappingInputRule,
@@ -7,8 +6,12 @@ import {
   emDash,
   ellipsis,
 } from "prosemirror-inputrules";
-import type { MarkType, NodeType, Schema } from "prosemirror-model";
-import { logger } from "@/lib/logger";
+import type { NodeType, Schema } from "prosemirror-model";
+
+// Inline mark conversions are handled by the live-format plugin.
+// This file only contains block-level rules that fire on space (heading, quote,
+// list, code fence) — these need to react synchronously to typing because they
+// change block structure, not just inline marks.
 
 function headingRule(nodeType: NodeType, maxLevel: number) {
   return textblockTypeInputRule(
@@ -39,34 +42,6 @@ function codeBlockRule(nodeType: NodeType) {
   return textblockTypeInputRule(/^```$/, nodeType);
 }
 
-function markInputRule(regexp: RegExp, markType: MarkType): InputRule {
-  return new InputRule(regexp, (state, match, start, end) => {
-    const captured = match[1];
-    if (!captured) return null;
-    const tr = state.tr;
-    const textStart = start + match[0].indexOf(captured);
-    const textEnd = textStart + captured.length;
-    if (textEnd < end) tr.delete(textEnd, end);
-    if (textStart > start) tr.delete(start, textStart);
-    const finalEnd = start + captured.length;
-    tr.addMark(start, finalEnd, markType.create());
-    tr.removeStoredMark(markType);
-    return tr;
-  });
-}
-
-function strongRule(markType: MarkType) {
-  return markInputRule(/\*\*([^*]+)\*\*$/, markType);
-}
-
-function emRule(markType: MarkType) {
-  return markInputRule(/(?<!\*)\*([^*\s][^*]*[^*\s]|[^*\s])\*$/, markType);
-}
-
-function codeMarkRule(markType: MarkType) {
-  return markInputRule(/`([^`]+)`$/, markType);
-}
-
 export function buildInputRules(schema: Schema) {
   const rules = [...smartQuotes, ellipsis, emDash];
   if (schema.nodes.blockquote) rules.push(blockQuoteRule(schema.nodes.blockquote));
@@ -74,13 +49,5 @@ export function buildInputRules(schema: Schema) {
   if (schema.nodes.bullet_list) rules.push(bulletListRule(schema.nodes.bullet_list));
   if (schema.nodes.code_block) rules.push(codeBlockRule(schema.nodes.code_block));
   if (schema.nodes.heading) rules.push(headingRule(schema.nodes.heading, 6));
-  if (schema.marks.strong) rules.push(strongRule(schema.marks.strong));
-  if (schema.marks.em) rules.push(emRule(schema.marks.em));
-  if (schema.marks.code) rules.push(codeMarkRule(schema.marks.code));
-
-  logger.info(
-    `[InputRules] ${rules.length} rules built. Nodes: [${Object.keys(schema.nodes).join(", ")}]. Marks: [${Object.keys(schema.marks).join(", ")}].`,
-  );
-
   return inputRules({ rules });
 }

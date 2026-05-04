@@ -572,10 +572,7 @@ function App() {
   }, []);
 
   return (
-    <div
-      className={`app-shell${sidebarOpen ? " has-sidebar" : ""}`}
-      data-theme={theme.effective}
-    >
+    <div className={`app-shell${sidebarOpen ? " has-sidebar" : ""}`}>
       <header className="app-header">
         <h1 className="app-title">Tylike</h1>
         <span className="app-file" title={filePath ?? UNTITLED_LABEL}>

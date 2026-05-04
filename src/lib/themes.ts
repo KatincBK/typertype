@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 // MVP-6 — Theme preference is what the user picked from the dropdown;
-// `effective` resolves "auto" to the live OS preference. Components only
-// care about effective; we apply it via the data-theme attribute on the
-// app shell so CSS variables in App.css cascade through everything.
+// `effective` resolves "auto" to the live OS preference. The hook puts
+// `data-theme` directly on <html> so the CSS variables cascade into
+// <body>, <#root>, and every descendant — putting it on the app shell
+// instead leaves <body>'s background stuck on the light fallback.
 
 export type ThemePreference = "auto" | "light" | "dark" | "sepia";
 export type EffectiveTheme = "light" | "dark" | "sepia";
@@ -57,6 +58,13 @@ export function useTheme(): ThemeApi {
 
   const effective: EffectiveTheme =
     preference === "auto" ? (systemDark ? "dark" : "light") : preference;
+
+  // Sync the data-theme attribute onto <html> before paint so the page
+  // never flashes the light fallback on mount or when the user toggles
+  // the system theme.
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute("data-theme", effective);
+  }, [effective]);
 
   const setPreference = (next: ThemePreference) => {
     setPreferenceState(next);

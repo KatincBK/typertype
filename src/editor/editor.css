@@ -1,4 +1,6 @@
-/* Editor block styles for math and mermaid (Adım 8 / Adım 9). */
+/* Editor block styles for math, mermaid, emoji, footnote, toc, tables. */
+
+/* ---------- Math ---------- */
 
 .math-inline {
   display: inline-block;
@@ -46,6 +48,8 @@
   font-style: italic;
 }
 
+/* ---------- Code blocks ---------- */
+
 .code-block {
   margin: 0.8em 0;
 }
@@ -85,4 +89,189 @@
 .mermaid-preview svg {
   max-width: 100%;
   height: auto;
+}
+
+/* ---------- Adım 12b: source vs rendered toggle ----------
+ * Hide the source pane when caret isn't inside; surface it only when
+ * focused. math_inline stays as-is (atom + click prompt).
+ */
+.math-block:not(.has-cursor) .math-block-source {
+  display: none;
+}
+.math-block.has-cursor .math-block-preview {
+  opacity: 0.5;
+}
+
+.code-mermaid:not(.has-cursor) > pre {
+  display: none;
+}
+.code-mermaid.has-cursor .mermaid-preview {
+  opacity: 0.6;
+}
+
+/* ---------- Emoji ---------- */
+
+.emoji {
+  display: inline-block;
+  cursor: default;
+}
+
+.emoji-popup {
+  position: fixed;
+  z-index: 1000;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px;
+  min-width: 180px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.emoji-popup-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.emoji-popup-item:hover,
+.emoji-popup-item.selected {
+  background: rgba(64, 128, 255, 0.12);
+}
+
+.emoji-popup-char {
+  font-size: 1.2em;
+}
+
+.emoji-popup-code {
+  color: rgba(0, 0, 0, 0.55);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.85em;
+}
+
+/* ---------- TOC ---------- */
+
+.toc {
+  margin: 0.8em 0;
+  padding: 0.6em 0.8em;
+  border: 1px dashed rgba(0, 0, 0, 0.16);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.toc-title {
+  font-weight: 600;
+  margin-bottom: 0.4em;
+  font-size: 0.9em;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.toc-item {
+  padding: 1px 0;
+  font-size: 0.9em;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.toc-h1 { padding-left: 0; font-weight: 600; }
+.toc-h2 { padding-left: 1em; }
+.toc-h3 { padding-left: 2em; }
+.toc-h4 { padding-left: 3em; }
+.toc-h5 { padding-left: 4em; }
+.toc-h6 { padding-left: 5em; }
+
+.toc-empty {
+  color: rgba(0, 0, 0, 0.4);
+  font-style: italic;
+}
+
+/* ---------- Footnote ---------- */
+
+.footnote-ref {
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.footnote-def {
+  margin: 0.4em 0;
+  padding: 0.4em 0.6em;
+  border-left: 3px solid rgba(0, 0, 0, 0.16);
+  background: rgba(0, 0, 0, 0.02);
+  font-size: 0.9em;
+}
+
+.footnote-def[data-id]::before {
+  content: "[" attr(data-id) "] ";
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* ---------- Tables ---------- */
+
+.editor table {
+  border-collapse: collapse;
+  margin: 0.8em 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.editor table td,
+.editor table th {
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  padding: 0.4em 0.6em;
+  vertical-align: top;
+  position: relative;
+  min-width: 60px;
+}
+
+.editor table th {
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+}
+
+.editor table .selectedCell {
+  background: rgba(64, 128, 255, 0.16);
+}
+
+.editor table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 20;
+  background: rgba(64, 128, 255, 0.3);
+}
+
+.table-toolbar {
+  position: fixed;
+  z-index: 1000;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+}
+
+.table-toolbar-btn {
+  appearance: none;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 0.85em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.table-toolbar-btn:hover {
+  background: rgba(64, 128, 255, 0.1);
 }

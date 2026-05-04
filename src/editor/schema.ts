@@ -1,10 +1,22 @@
 import { Schema } from "prosemirror-model";
 import { schema as baseSchema } from "prosemirror-markdown";
 import { mathBlockSpec, mathInlineSpec } from "./math";
+import { emojiNodeSpec } from "./emoji";
+import { tocNodeSpec } from "./toc";
+import { footnoteDefSpec, footnoteRefSpec } from "./footnote";
+import { tableNodeSpecMap } from "./tables";
 
 const nodes = baseSchema.spec.nodes
   .addToEnd("math_inline", mathInlineSpec)
-  .addToEnd("math_block", mathBlockSpec);
+  .addToEnd("math_block", mathBlockSpec)
+  .addToEnd("emoji", emojiNodeSpec)
+  .addToEnd("toc", tocNodeSpec)
+  .addToEnd("footnote_ref", footnoteRefSpec)
+  .addToEnd("footnote_def", footnoteDefSpec)
+  .addToEnd("table", tableNodeSpecMap.table)
+  .addToEnd("table_row", tableNodeSpecMap.table_row)
+  .addToEnd("table_cell", tableNodeSpecMap.table_cell)
+  .addToEnd("table_header", tableNodeSpecMap.table_header);
 
 export const schema = new Schema({
   nodes,

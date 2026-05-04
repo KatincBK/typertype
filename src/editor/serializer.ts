@@ -7,9 +7,13 @@ import MarkdownIt from "markdown-it";
 import markdownitMark from "markdown-it-mark";
 import markdownitSub from "markdown-it-sub";
 import markdownitSup from "markdown-it-sup";
+import { full as markdownitEmoji } from "markdown-it-emoji";
+import markdownitFootnote from "markdown-it-footnote";
 import type { Node } from "prosemirror-model";
 import { schema } from "./schema";
 import { mathMarkdownItPlugin } from "./math";
+import { tocMarkdownItPlugin } from "./toc";
+import { serializeTable } from "./tables";
 
 function listIsTight(tokens: readonly { type: string; hidden?: boolean }[], i: number): boolean {
   while (++i < tokens.length) {
@@ -22,7 +26,10 @@ const md = MarkdownIt({ html: true })
   .use(markdownitMark)
   .use(markdownitSub)
   .use(markdownitSup)
-  .use(mathMarkdownItPlugin);
+  .use(markdownitEmoji)
+  .use(markdownitFootnote)
+  .use(mathMarkdownItPlugin)
+  .use(tocMarkdownItPlugin);
 
 const parser = new MarkdownParser(schema, md, {
   blockquote: { block: "blockquote" },
@@ -64,6 +71,47 @@ const parser = new MarkdownParser(schema, md, {
     getAttrs: (tok) => ({ tex: tok.content }),
   },
   math_block: { block: "math_block", noCloseToken: true },
+  emoji: {
+    node: "emoji",
+    getAttrs: (tok) => ({
+      shortcode: tok.markup || "",
+      char: tok.content || "",
+    }),
+  },
+  toc: { node: "toc" },
+  footnote_ref: {
+    node: "footnote_ref",
+    getAttrs: (tok) => ({ id: tok.meta?.id?.toString() ?? tok.content }),
+  },
+  footnote: {
+    block: "footnote_def",
+    getAttrs: (tok) => ({ id: tok.meta?.id?.toString() ?? "" }),
+  },
+  footnote_anchor: { ignore: true },
+  footnote_block: { ignore: true },
+  // GFM table support
+  table: { block: "table" },
+  thead: { ignore: true },
+  tbody: { ignore: true },
+  tr: { block: "table_row" },
+  th: {
+    block: "table_header",
+    getAttrs: (tok) => ({
+      colspan: 1,
+      rowspan: 1,
+      colwidth: null,
+      align: tok.attrGet("style")?.match(/text-align:\s*(\w+)/)?.[1] ?? null,
+    }),
+  },
+  td: {
+    block: "table_cell",
+    getAttrs: (tok) => ({
+      colspan: 1,
+      rowspan: 1,
+      colwidth: null,
+      align: tok.attrGet("style")?.match(/text-align:\s*(\w+)/)?.[1] ?? null,
+    }),
+  },
   em: { mark: "em" },
   strong: { mark: "strong" },
   link: {
@@ -90,6 +138,36 @@ const serializer = new MarkdownSerializer(
       state.write("$$\n" + node.textContent + "\n$$");
       state.closeBlock(node);
     },
+    emoji: (state, node) => {
+      // Round-trip the original :shortcode: form so the source stays stable
+      if (node.attrs.shortcode) {
+        state.write(":" + node.attrs.shortcode + ":");
+      } else {
+        state.write(node.attrs.char || "");
+      }
+    },
+    toc: (state, node) => {
+      state.write("[toc]");
+      state.closeBlock(node);
+    },
+    footnote_ref: (state, node) => {
+      state.write("[^" + node.attrs.id + "]");
+    },
+    footnote_def: (state, node) => {
+      state.write("[^" + node.attrs.id + "]: ");
+      state.renderInline(node.firstChild ?? node);
+      state.closeBlock(node);
+    },
+    table: (state, node) => {
+      state.write(serializeTable(node));
+      state.closeBlock(node);
+    },
+    table_row: () => {
+      // Cells are emitted via serializeTable; this entry is just to satisfy
+      // the serializer when prosemirror walks descendants.
+    },
+    table_cell: () => {},
+    table_header: () => {},
   },
   {
     ...defaultMarkdownSerializer.marks,

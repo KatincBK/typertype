@@ -49,11 +49,36 @@ flowchart LR
   C -->|hayır| E[Plain Text]
 \`\`\`
 
+## Emoji (Adım 7)
+
+Yazınca \`:smile:\` → :smile:, \`:rocket:\` → :rocket:, \`:tada:\` → :tada:.
+Yazarken \`:\` sonrasına başlarsan otomatik popup açılır (Yön tuşları + Enter / Esc).
+
+## İçindekiler (Adım 11)
+
+[toc]
+
+## Tablo (Adım 10) — \`Ctrl+T\` ile yenisini ekle
+
+| Özellik | Durum | Açıklama |
+| --- | :---: | --- |
+| WYSIWYG | ✅ | ProseMirror tabanlı |
+| Math | ✅ | KaTeX |
+| Mermaid | ✅ | Live preview |
+| Tablo | ✅ | prosemirror-tables |
+
+## Dipnotlar (Adım 11)
+
+Bu cümlede bir dipnot[^1] var, ardından bir tane daha[^typora].
+
+[^1]: İlk dipnot, sayısal id'li.
+[^typora]: Dipnot id'leri serbest metin olabilir.
+
 ## Kısayollar
 
 - Heading: \`Ctrl+1\` … \`Ctrl+6\`, paragraph: \`Ctrl+0\`
 - Bold \`Ctrl+B\`, italic \`Ctrl+I\`, underline \`Ctrl+U\`, strike \`Alt+Shift+5\`
-- Math block \`Ctrl+Shift+M\`, code fence \`Ctrl+Shift+K\`
+- Math block \`Ctrl+Shift+M\`, code fence \`Ctrl+Shift+K\`, table \`Ctrl+T\`
 - Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+]\`, numbered: \`Ctrl+Shift+[\`
 - Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;

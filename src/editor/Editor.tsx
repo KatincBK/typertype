@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { history } from "prosemirror-history";
@@ -12,9 +12,20 @@ import { buildLiveFormatPlugin } from "./liveFormat";
 import { buildAutoPairPlugin } from "./autoPair";
 import { buildLiveMathPlugin, buildMathNodeViews } from "./math";
 import { CodeBlockView } from "./mermaid";
+import {
+  buildEmojiNodeView,
+  buildEmojiPopupPlugin,
+  buildLiveEmojiPlugin,
+} from "./emoji";
+import { buildTocNodeView, buildTocRefreshPlugin } from "./toc";
+import { buildFootnoteNodeView } from "./footnote";
+import { buildTablePlugins, buildTableToolbarPlugin } from "./tables";
+import { buildFocusBlockPlugin } from "./focusBlock";
+import { loadUserConfig } from "./customConfig";
 import { logger } from "@/lib/logger";
 
 import "prosemirror-view/style/prosemirror.css";
+import "prosemirror-tables/style/tables.css";
 import "./editor.css";
 
 interface EditorProps {
@@ -27,29 +38,52 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
+  // Adım 13 — load user keymap overrides on mount. Editor mounts only after
+  // the config has been loaded (or failed gracefully) so the keymap is
+  // built once with the right bindings.
+  const [overrides, setOverrides] = useState<Record<string, string> | null>(null);
   useEffect(() => {
-    if (!containerRef.current) return;
+    let cancelled = false;
+    loadUserConfig().then((cfg) => {
+      if (cancelled) return;
+      setOverrides(cfg.keymap);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!containerRef.current || overrides === null) return;
 
     const state = EditorState.create({
       doc: markdownToDoc(initialMarkdown),
       plugins: [
         buildInputRules(schema),
-        // liveMath must run before liveFormat: $..$ contents (^ _ etc.)
-        // would otherwise be partially marked as super/subscript first.
+        // liveMath before liveFormat so $..$ contents (^ _) aren't grabbed
+        // by sup/sub marks first. liveEmoji is independent of those.
         buildLiveMathPlugin(schema),
+        buildLiveEmojiPlugin(schema),
         buildLiveFormatPlugin(schema),
         buildAutoPairPlugin(),
-        buildKeymap(schema),
+        buildEmojiPopupPlugin(),
+        buildTocRefreshPlugin(),
+        buildFocusBlockPlugin(),
+        buildTableToolbarPlugin(),
+        ...buildTablePlugins(),
+        buildKeymap(schema, overrides),
         keymap(baseKeymap),
         history(),
       ],
     });
 
-    const mathViews = buildMathNodeViews();
     const view = new EditorView(containerRef.current, {
       state,
       nodeViews: {
-        ...mathViews,
+        ...buildMathNodeViews(),
+        ...buildEmojiNodeView(),
+        ...buildTocNodeView(),
+        ...buildFootnoteNodeView(),
         code_block: (node) => new CodeBlockView(node),
       },
       dispatchTransaction(tr) {
@@ -67,7 +101,7 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
       view.destroy();
       logger.info("Editor destroyed");
     };
-  }, [initialMarkdown]);
+  }, [initialMarkdown, overrides]);
 
   return <div ref={containerRef} className="editor" />;
 }

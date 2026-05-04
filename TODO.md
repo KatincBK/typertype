@@ -4,9 +4,9 @@
 
 ## Mevcut Durum
 
-- **Tamamlanan**: FAZ 0 (mimari), FAZ 1 (iskelet), FAZ 3 (parse/serialize), FAZ 4 başlangıç (çekirdek WYSIWYG)
-- **Aktif**: **Typora-Parity Track** — editör Typora seviyesine gelene kadar
-- **Strateji**: Hızlı MVP yerine adım adım eksiksiz Typora uyumu. Parity tamamlanana kadar uygulamayı kullanmıyoruz.
+- **Tamamlanan**: FAZ 0 (mimari), FAZ 1 (iskelet), FAZ 3 (parse/serialize), FAZ 4 başlangıç (çekirdek WYSIWYG), **Typora-Parity Track tüm 13 adım ✅**
+- **Sıradaki**: Parity sonrası MVP-2 (dosya I/O), MVP-3 (sidebar) vb.
+- **Strateji**: Hızlı MVP yerine adım adım eksiksiz Typora uyumu. Parity tamamlandı.
 
 ---
 
@@ -22,14 +22,14 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 | 4 | Klavye kısayolları Typora ile birebir eşle | 1 saat | [x] |
 | 5 | Auto-Pair plugin (brackets, quotes, markdown chars) | 1 saat | [x] (sadece brackets — quotes smartQuotes ile, markdown chars live-format ile) |
 | 6 | SmartyPants: `--`, `---`, `...`, curly quotes | 30 dk | [x] |
-| 7 | Emoji shortcode (`:smile:`) + auto-complete popup | 1.5 saat | [ ] |
+| 7 | Emoji shortcode (`:smile:`) + auto-complete popup | 1.5 saat | [x] |
 | 8 | Math block (KaTeX): `$$..$$` ve `$..$` rendering | 2 saat | [x] |
 | 9 | Mermaid diyagramlar (`\`\`\`mermaid`) | 1.5 saat | [x] |
-| 10 | Interactive tablo: focus toolbar + drag resize | 3 saat | [ ] |
-| 11 | Footnote (`[^1]`) + TOC (`[toc]`) rendering | 1.5 saat | [ ] |
+| 10 | Interactive tablo: focus toolbar + drag resize | 3 saat | [x] |
+| 11 | Footnote (`[^1]`) + TOC (`[toc]`) rendering | 1.5 saat | [x] |
 | 12a | ~~Live conversion (`appendTransaction` ile her değişiklikte pattern tarama)~~ | — | [x] (Adım 2 ile birlikte) |
-| 12b | Source vs Rendered toggle UX (cursor on element → markdown source görünür) | 1.5 saat | [ ] |
-| 13 | Custom shortcut config (`%APPDATA%\Tylike\conf\conf.user.json`) | 1 saat | [ ] |
+| 12b | Source vs Rendered toggle UX (cursor on element → markdown source görünür) | 1.5 saat | [x] |
+| 13 | Custom shortcut config (`%APPDATA%\Tylike\conf\conf.user.json`) | 1 saat | [x] |
 
 **Toplam ~17 saat** çekirdek kod. Detaylar `CONTROLS.md`'de.
 

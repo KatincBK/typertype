@@ -25,6 +25,12 @@ import {
   type FileEntry,
 } from "@/lib/folderIO";
 import { extractHeadings } from "@/lib/headings";
+import { addRecent, getRecents, removeRecent } from "@/lib/recents";
+import {
+  clearRecovery,
+  readRecovery,
+  writeRecovery,
+} from "@/lib/recovery";
 import { Sidebar } from "@/components/Sidebar";
 import { FindBar } from "@/components/FindBar";
 import "./App.css";
@@ -145,6 +151,12 @@ function App() {
     currentIndex: -1,
   });
 
+  // MVP-5 — auto-save / recovery / recents state
+  const [recents, setRecents] = useState<string[]>(() => getRecents());
+  // Gate the recovery snapshot effect until we've decided whether to honor
+  // the existing recovery file on startup, so we don't blindly clobber it.
+  const [recoveryHandled, setRecoveryHandled] = useState(false);
+
   const editorRef = useRef<EditorHandle>(null);
 
   const dirty = currentMd !== savedMd;
@@ -163,6 +175,11 @@ function App() {
     editorRef.current?.findClose();
   }, []);
 
+  const recordRecent = useCallback((path: string) => {
+    addRecent(path);
+    setRecents(getRecents());
+  }, []);
+
   const loadFile = useCallback(
     (path: string, content: string) => {
       setLoadedMd(content);
@@ -172,8 +189,9 @@ function App() {
       // The editor remounts — its plugin state is gone. Drop our mirror
       // too so a stale "3 / 5" doesn't linger in the bar.
       closeFind();
+      recordRecent(path);
     },
-    [closeFind],
+    [closeFind, recordRecent],
   );
 
   const handleNew = useCallback(() => {
@@ -202,7 +220,8 @@ function App() {
     if (!ok) return;
     setFilePath(target);
     setSavedMd(currentMd);
-  }, [filePath, currentMd]);
+    recordRecent(target);
+  }, [filePath, currentMd, recordRecent]);
 
   const handleSaveAs = useCallback(async () => {
     const target = await pickSavePath(
@@ -213,7 +232,8 @@ function App() {
     if (!ok) return;
     setFilePath(target);
     setSavedMd(currentMd);
-  }, [fileLabel, currentMd]);
+    recordRecent(target);
+  }, [fileLabel, currentMd, recordRecent]);
 
   // MVP-3 — sidebar handlers
   const handlePickFolder = useCallback(async () => {
@@ -230,7 +250,13 @@ function App() {
       if (path === filePath) return; // already open, no-op
       if (!confirmDiscardDirty()) return;
       const content = await safeReadFile(path);
-      if (content === null) return;
+      if (content === null) {
+        // The path is dead (deleted / moved). Drop it from recents so the
+        // user doesn't keep clicking a phantom entry.
+        removeRecent(path);
+        setRecents(getRecents());
+        return;
+      }
       loadFile(path, content);
     },
     [filePath, confirmDiscardDirty, loadFile],
@@ -261,6 +287,101 @@ function App() {
     if (!findOpen) return;
     editorRef.current?.findSet(findQuery, findOptions);
   }, [findOpen, findQuery, findOptions]);
+
+  // MVP-5 — On first mount, look for a leftover crash-recovery snapshot.
+  // If the user accepts, we splice the recovered content back into the
+  // editor (with savedMd left as SAMPLE so the doc is dirty and the user
+  // can save it explicitly). If they decline, we clear the snapshot so
+  // it doesn't ask again next launch.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const snap = await readRecovery();
+      if (cancelled) return;
+      if (!snap) {
+        setRecoveryHandled(true);
+        return;
+      }
+      const label = snap.filePath ? basename(snap.filePath) : UNTITLED_LABEL;
+      const when = new Date(snap.savedAt).toLocaleString();
+      const ok = window.confirm(
+        `${label} için kaydedilmemiş değişiklikler bulundu (${when}). Geri yüklensin mi?`,
+      );
+      if (cancelled) return;
+      if (ok) {
+        setLoadedMd(snap.content);
+        setSavedMd(""); // mark dirty so the indicator is visible
+        setCurrentMd(snap.content);
+        setFilePath(snap.filePath);
+        if (snap.filePath) recordRecent(snap.filePath);
+      } else {
+        await clearRecovery();
+      }
+      setRecoveryHandled(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // recordRecent is stable; including only deps that should never change
+    // post-mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // MVP-5 — auto-save: when the doc is dirty AND has a path on disk, write
+  // the latest content after 2 seconds of typing inactivity. Re-running
+  // the effect on every keystroke + cleanup-resets-the-timer gives us
+  // the debounce for free.
+  const AUTO_SAVE_MS = 2000;
+  useEffect(() => {
+    if (!recoveryHandled) return;
+    if (!filePath || !dirty) return;
+    const timer = setTimeout(async () => {
+      const ok = await safeSaveFile(filePath, currentMd);
+      if (ok) {
+        setSavedMd(currentMd);
+        recordRecent(filePath);
+      }
+    }, AUTO_SAVE_MS);
+    return () => clearTimeout(timer);
+  }, [recoveryHandled, filePath, currentMd, dirty, recordRecent]);
+
+  // MVP-5 — recovery snapshot: every 3 seconds of inactivity while dirty,
+  // write the snapshot. When the doc goes clean (saved or matches disk),
+  // delete the snapshot so the next launch doesn't offer to "recover"
+  // already-saved work.
+  const RECOVERY_MS = 3000;
+  useEffect(() => {
+    if (!recoveryHandled) return;
+    if (!dirty) {
+      void clearRecovery();
+      return;
+    }
+    const timer = setTimeout(() => {
+      void writeRecovery(filePath, currentMd);
+    }, RECOVERY_MS);
+    return () => clearTimeout(timer);
+  }, [recoveryHandled, dirty, filePath, currentMd]);
+
+  // MVP-5 — window blur handler. Save / snapshot immediately (no debounce)
+  // so a crash or accidental close after the user tabs away still keeps
+  // their last typed state. Bound once via stateRef to avoid re-binding
+  // the listener every keystroke.
+  const blurStateRef = useRef({ filePath, currentMd, dirty, recoveryHandled });
+  blurStateRef.current = { filePath, currentMd, dirty, recoveryHandled };
+  useEffect(() => {
+    function onBlur() {
+      const s = blurStateRef.current;
+      if (!s.recoveryHandled || !s.dirty) return;
+      if (s.filePath) {
+        void safeSaveFile(s.filePath, s.currentMd).then((ok) => {
+          if (ok) setSavedMd(s.currentMd);
+        });
+      }
+      void writeRecovery(s.filePath, s.currentMd);
+    }
+    window.addEventListener("blur", onBlur);
+    return () => window.removeEventListener("blur", onBlur);
+  }, []);
 
   const handlersRef = useRef({
     handleSave,
@@ -354,6 +475,7 @@ function App() {
             tree={tree}
             activeFilePath={filePath}
             headings={headings}
+            recents={recents}
             onPickFolder={handlePickFolder}
             onFileClick={handleFileFromTree}
             onJumpHeading={handleJumpHeading}

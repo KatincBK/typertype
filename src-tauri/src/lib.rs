@@ -62,6 +62,61 @@ fn write_text_file(path: String, content: String) -> Result<(), String> {
     std::fs::write(&path, content).map_err(|e| format!("write {}: {}", path, e))
 }
 
+// MVP-5 — crash-recovery snapshot. Stored as JSON in app_config_dir so it
+// survives app restarts and is written atomically on each tick. The
+// frontend writes when the doc is dirty (debounced) and clears when a
+// successful save brings it back to clean.
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RecoverySnapshot {
+    file_path: Option<String>,
+    content: String,
+    saved_at: String,
+}
+
+fn recovery_path(app: &tauri::AppHandle) -> Result<PathBuf, tauri::Error> {
+    let dir = app.path().app_config_dir()?;
+    Ok(dir.join("recovery.json"))
+}
+
+#[tauri::command]
+fn write_recovery(
+    app: tauri::AppHandle,
+    snapshot: RecoverySnapshot,
+) -> Result<(), String> {
+    let path = recovery_path(&app).map_err(|e| e.to_string())?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let json =
+        serde_json::to_string(&snapshot).map_err(|e| format!("serialize: {}", e))?;
+    std::fs::write(&path, json).map_err(|e| format!("write {}: {}", path.display(), e))
+}
+
+#[tauri::command]
+fn read_recovery(app: tauri::AppHandle) -> Result<Option<RecoverySnapshot>, String> {
+    let path = recovery_path(&app).map_err(|e| e.to_string())?;
+    if !path.exists() {
+        return Ok(None);
+    }
+    let json = std::fs::read_to_string(&path)
+        .map_err(|e| format!("read {}: {}", path.display(), e))?;
+    let snap: RecoverySnapshot = serde_json::from_str(&json)
+        .map_err(|e| format!("parse recovery: {}", e))?;
+    Ok(Some(snap))
+}
+
+#[tauri::command]
+fn clear_recovery(app: tauri::AppHandle) -> Result<(), String> {
+    let path = recovery_path(&app).map_err(|e| e.to_string())?;
+    if path.exists() {
+        std::fs::remove_file(&path)
+            .map_err(|e| format!("delete {}: {}", path.display(), e))?;
+    }
+    Ok(())
+}
+
 // MVP-3 — folder picker + recursive directory listing for the sidebar tree.
 // Only markdown / text files are surfaced; hidden entries (`.git`, dotfiles)
 // are skipped. Directories come before files, then alphabetically.
@@ -169,6 +224,9 @@ pub fn run() {
             write_text_file,
             pick_folder_dialog,
             read_dir_tree,
+            write_recovery,
+            read_recovery,
+            clear_recovery,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

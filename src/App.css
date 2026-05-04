@@ -251,13 +251,53 @@ body,
 }
 
 .sidebar-section:first-child {
-  flex: 1 1 50%;
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+.sidebar-recents-section {
+  flex: 0 0 auto;
+  max-height: 30%;
   overflow: auto;
 }
 
 .sidebar-outline-section {
-  flex: 1 1 50%;
+  flex: 1 1 40%;
   overflow: auto;
+}
+
+/* Recent files */
+
+.sidebar-recents {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0.4rem 0.5rem;
+}
+
+.sidebar-recent {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-recent:hover {
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.sidebar-recent.is-active {
+  background: rgba(64, 128, 255, 0.18);
+  color: var(--accent);
 }
 
 /* File tree */

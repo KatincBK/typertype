@@ -9,6 +9,7 @@ import markdownitSub from "markdown-it-sub";
 import markdownitSup from "markdown-it-sup";
 import type { Node } from "prosemirror-model";
 import { schema } from "./schema";
+import { mathMarkdownItPlugin } from "./math";
 
 function listIsTight(tokens: readonly { type: string; hidden?: boolean }[], i: number): boolean {
   while (++i < tokens.length) {
@@ -20,7 +21,8 @@ function listIsTight(tokens: readonly { type: string; hidden?: boolean }[], i: n
 const md = MarkdownIt({ html: true })
   .use(markdownitMark)
   .use(markdownitSub)
-  .use(markdownitSup);
+  .use(markdownitSup)
+  .use(mathMarkdownItPlugin);
 
 const parser = new MarkdownParser(schema, md, {
   blockquote: { block: "blockquote" },
@@ -57,6 +59,11 @@ const parser = new MarkdownParser(schema, md, {
     }),
   },
   hardbreak: { node: "hard_break" },
+  math_inline: {
+    node: "math_inline",
+    getAttrs: (tok) => ({ tex: tok.content }),
+  },
+  math_block: { block: "math_block", noCloseToken: true },
   em: { mark: "em" },
   strong: { mark: "strong" },
   link: {
@@ -73,39 +80,51 @@ const parser = new MarkdownParser(schema, md, {
   sup: { mark: "superscript" },
 });
 
-const serializer = new MarkdownSerializer(defaultMarkdownSerializer.nodes, {
-  ...defaultMarkdownSerializer.marks,
-  strikethrough: {
-    open: "~~",
-    close: "~~",
-    mixable: true,
-    expelEnclosingWhitespace: true,
+const serializer = new MarkdownSerializer(
+  {
+    ...defaultMarkdownSerializer.nodes,
+    math_inline: (state, node) => {
+      state.write("$" + node.attrs.tex + "$");
+    },
+    math_block: (state, node) => {
+      state.write("$$\n" + node.textContent + "\n$$");
+      state.closeBlock(node);
+    },
   },
-  highlight: {
-    open: "==",
-    close: "==",
-    mixable: true,
-    expelEnclosingWhitespace: true,
+  {
+    ...defaultMarkdownSerializer.marks,
+    strikethrough: {
+      open: "~~",
+      close: "~~",
+      mixable: true,
+      expelEnclosingWhitespace: true,
+    },
+    highlight: {
+      open: "==",
+      close: "==",
+      mixable: true,
+      expelEnclosingWhitespace: true,
+    },
+    subscript: {
+      open: "~",
+      close: "~",
+      mixable: true,
+      expelEnclosingWhitespace: true,
+    },
+    superscript: {
+      open: "^",
+      close: "^",
+      mixable: true,
+      expelEnclosingWhitespace: true,
+    },
+    underline: {
+      open: "<u>",
+      close: "</u>",
+      mixable: false,
+      expelEnclosingWhitespace: true,
+    },
   },
-  subscript: {
-    open: "~",
-    close: "~",
-    mixable: true,
-    expelEnclosingWhitespace: true,
-  },
-  superscript: {
-    open: "^",
-    close: "^",
-    mixable: true,
-    expelEnclosingWhitespace: true,
-  },
-  underline: {
-    open: "<u>",
-    close: "</u>",
-    mixable: false,
-    expelEnclosingWhitespace: true,
-  },
-});
+);
 
 export function markdownToDoc(markdown: string): Node {
   const parsed = parser.parse(markdown);

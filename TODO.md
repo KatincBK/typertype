@@ -23,8 +23,8 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 | 5 | Auto-Pair plugin (brackets, quotes, markdown chars) | 1 saat | [x] (sadece brackets — quotes smartQuotes ile, markdown chars live-format ile) |
 | 6 | SmartyPants: `--`, `---`, `...`, curly quotes | 30 dk | [x] |
 | 7 | Emoji shortcode (`:smile:`) + auto-complete popup | 1.5 saat | [ ] |
-| 8 | Math block (KaTeX): `$$..$$` ve `$..$` rendering | 2 saat | [ ] |
-| 9 | Mermaid diyagramlar (`\`\`\`mermaid`) | 1.5 saat | [ ] |
+| 8 | Math block (KaTeX): `$$..$$` ve `$..$` rendering | 2 saat | [x] |
+| 9 | Mermaid diyagramlar (`\`\`\`mermaid`) | 1.5 saat | [x] |
 | 10 | Interactive tablo: focus toolbar + drag resize | 3 saat | [ ] |
 | 11 | Footnote (`[^1]`) + TOC (`[toc]`) rendering | 1.5 saat | [ ] |
 | 12a | ~~Live conversion (`appendTransaction` ile her değişiklikte pattern tarama)~~ | — | [x] (Adım 2 ile birlikte) |

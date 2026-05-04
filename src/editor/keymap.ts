@@ -70,6 +70,15 @@ export function buildKeymap(schema: Schema) {
   if (schema.nodes.code_block) {
     keys["Mod-Shift-k"] = setBlockType(schema.nodes.code_block);
   }
+  if (schema.nodes.math_block) {
+    keys["Mod-Shift-m"] = (state, dispatch) => {
+      if (dispatch) {
+        const mb = schema.nodes.math_block.create();
+        dispatch(state.tr.replaceSelectionWith(mb).scrollIntoView());
+      }
+      return true;
+    };
+  }
   if (schema.nodes.bullet_list) {
     keys["Mod-Shift-]"] = wrapInList(schema.nodes.bullet_list);
   }

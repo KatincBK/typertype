@@ -1,8 +1,13 @@
 import { Schema } from "prosemirror-model";
 import { schema as baseSchema } from "prosemirror-markdown";
+import { mathBlockSpec, mathInlineSpec } from "./math";
+
+const nodes = baseSchema.spec.nodes
+  .addToEnd("math_inline", mathInlineSpec)
+  .addToEnd("math_block", mathBlockSpec);
 
 export const schema = new Schema({
-  nodes: baseSchema.spec.nodes,
+  nodes,
   marks: baseSchema.spec.marks
     .addToEnd("strikethrough", {
       parseDOM: [

@@ -10,9 +10,12 @@ import { buildKeymap } from "./keymap";
 import { buildInputRules } from "./inputRules";
 import { buildLiveFormatPlugin } from "./liveFormat";
 import { buildAutoPairPlugin } from "./autoPair";
+import { buildLiveMathPlugin, buildMathNodeViews } from "./math";
+import { CodeBlockView } from "./mermaid";
 import { logger } from "@/lib/logger";
 
 import "prosemirror-view/style/prosemirror.css";
+import "./editor.css";
 
 interface EditorProps {
   initialMarkdown?: string;
@@ -31,6 +34,9 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
       doc: markdownToDoc(initialMarkdown),
       plugins: [
         buildInputRules(schema),
+        // liveMath must run before liveFormat: $..$ contents (^ _ etc.)
+        // would otherwise be partially marked as super/subscript first.
+        buildLiveMathPlugin(schema),
         buildLiveFormatPlugin(schema),
         buildAutoPairPlugin(),
         buildKeymap(schema),
@@ -39,8 +45,13 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
       ],
     });
 
+    const mathViews = buildMathNodeViews();
     const view = new EditorView(containerRef.current, {
       state,
+      nodeViews: {
+        ...mathViews,
+        code_block: (node) => new CodeBlockView(node),
+      },
       dispatchTransaction(tr) {
         const next = view.state.apply(tr);
         view.updateState(next);

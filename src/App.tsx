@@ -29,11 +29,32 @@ function hello() {
 
 ---
 
+## Math (Adım 8)
+
+Inline: Einstein denklemi $E = mc^2$ ve Pisagor $a^2 + b^2 = c^2$.
+
+Block:
+
+$$
+\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+$$
+
+## Mermaid (Adım 9)
+
+\`\`\`mermaid
+flowchart LR
+  A[Markdown] --> B(ProseMirror)
+  B --> C{KaTeX / Mermaid?}
+  C -->|evet| D[NodeView]
+  C -->|hayır| E[Plain Text]
+\`\`\`
+
 ## Kısayollar
 
 - Heading: \`Ctrl+1\` … \`Ctrl+6\`, paragraph: \`Ctrl+0\`
-- Bold \`Ctrl+B\`, italic \`Ctrl+I\`
-- Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+8\`, numbered: \`Ctrl+Shift+7\`
+- Bold \`Ctrl+B\`, italic \`Ctrl+I\`, underline \`Ctrl+U\`, strike \`Alt+Shift+5\`
+- Math block \`Ctrl+Shift+M\`, code fence \`Ctrl+Shift+K\`
+- Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+]\`, numbered: \`Ctrl+Shift+[\`
 - Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;
 

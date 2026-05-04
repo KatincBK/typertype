@@ -1,0 +1,88 @@
+/* Editor block styles for math and mermaid (Adım 8 / Adım 9). */
+
+.math-inline {
+  display: inline-block;
+  cursor: pointer;
+  padding: 0 0.1em;
+  border-radius: 2px;
+}
+
+.math-inline:hover {
+  background: rgba(64, 128, 255, 0.08);
+}
+
+.math-block {
+  margin: 0.8em 0;
+  padding: 0.6em 0.8em;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.math-block-source {
+  margin: 0 0 0.4em 0;
+  padding: 0.4em 0.6em;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 3px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  white-space: pre-wrap;
+}
+
+.math-block-source code {
+  font: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.math-block-preview {
+  padding: 0.3em 0;
+  text-align: center;
+}
+
+.math-empty,
+.mermaid-empty {
+  color: rgba(0, 0, 0, 0.4);
+  font-style: italic;
+}
+
+.code-block {
+  margin: 0.8em 0;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 0.6em 0.8em;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+}
+
+.code-block pre code {
+  font: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.code-mermaid {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  padding: 0.4em;
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.mermaid-preview {
+  margin-top: 0.6em;
+  padding: 0.6em;
+  background: white;
+  border-radius: 3px;
+  text-align: center;
+  min-height: 1em;
+}
+
+.mermaid-preview svg {
+  max-width: 100%;
+  height: auto;
+}

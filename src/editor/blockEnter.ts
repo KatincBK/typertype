@@ -62,6 +62,37 @@ export function blockTransformEnter(schema: Schema): Command {
       return true;
     }
 
+    // Block math: $$expr$$ on a single line → math_block, paragraph after
+    const mathSingle = /^\$\$(.+?)\$\$$/.exec(text);
+    if (mathSingle && schema.nodes.math_block) {
+      if (dispatch) {
+        const innerText = mathSingle[1].trim();
+        const mathBlock = innerText
+          ? schema.nodes.math_block.create({}, schema.text(innerText))
+          : schema.nodes.math_block.create();
+        const para = schema.nodes.paragraph.createAndFill();
+        if (!para) return false;
+        const tr = state.tr.replaceWith(blockStart, blockEnd, [mathBlock, para]);
+        const cursor = blockStart + mathBlock.nodeSize + 1;
+        tr.setSelection(TextSelection.create(tr.doc, cursor));
+        dispatch(tr.scrollIntoView());
+      }
+      return true;
+    }
+
+    // Block math: bare $$ → empty math_block, cursor inside the source pane
+    const mathOpen = /^\$\$$/.exec(text);
+    if (mathOpen && schema.nodes.math_block) {
+      if (dispatch) {
+        const mathBlock = schema.nodes.math_block.create();
+        const tr = state.tr.replaceWith(blockStart, blockEnd, mathBlock);
+        const cursor = blockStart + 1;
+        tr.setSelection(TextSelection.create(tr.doc, cursor));
+        dispatch(tr.scrollIntoView());
+      }
+      return true;
+    }
+
     // Blockquote: stay inside the quote with cursor on a fresh paragraph
     const quoteMatch = /^> (.+)$/.exec(text);
     if (quoteMatch && schema.nodes.blockquote) {
@@ -134,14 +165,19 @@ export function blockTransformEnter(schema: Schema): Command {
   };
 }
 
-// Inside a code block, when the caret sits at the end on an empty trailing
-// line, Enter exits the fence and lands on a fresh paragraph. Other Enters
-// inside the code block fall through to the default (insert literal \n).
+// Inside a code-like block (code_block or math_block), when the caret sits
+// at the end on an empty trailing line, Enter exits the fence and lands on a
+// fresh paragraph. Other Enters inside the block fall through to the default
+// (insert literal \n).
 export function codeBlockExitOnEmptyLine(schema: Schema): Command {
   return (state, dispatch) => {
     const { $from, empty } = state.selection;
     if (!empty) return false;
-    if ($from.parent.type !== schema.nodes.code_block) return false;
+    const parentType = $from.parent.type;
+    const isExitable =
+      parentType === schema.nodes.code_block ||
+      parentType === schema.nodes.math_block;
+    if (!isExitable) return false;
 
     const text = $from.parent.textContent;
     if ($from.parentOffset !== text.length) return false;

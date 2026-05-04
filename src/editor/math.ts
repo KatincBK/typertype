@@ -257,7 +257,13 @@ export function buildLiveMathPlugin(schema: Schema): Plugin {
         if (!node.isText || !node.text) return;
         if (node.marks.some((m) => m.type.name === "code")) return;
 
-        const re = /(?<!\\)(?<!\$)\$(\S[^$\n]*?\S|\S)\$(?!\$)/g;
+        // Inline math: `$...$` where opening/closing $ aren't escaped or
+        // doubled, and the contents aren't surrounded by whitespace. The
+        // content may include `\$` (escaped dollar, KaTeX-friendly) — the
+        // `\\.` alternative consumes the escape pair as a single unit so
+        // it isn't mistaken for the closing delimiter.
+        const re =
+          /(?<!\\)(?<!\$)\$(?!\s)((?:[^$\\\n]|\\.)+?)(?<!\s)\$(?!\$)/g;
         for (const match of node.text.matchAll(re)) {
           if (match.index === undefined) continue;
           replacements.push({

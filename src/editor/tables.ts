@@ -27,9 +27,10 @@ const tableNodeSpecs = tableNodes({
     align: {
       default: null,
       getFromDOM: (dom: HTMLElement) => dom.style.textAlign || null,
-      setDOMAttr: (value: string | null, attrs: Record<string, string>) => {
-        if (value) {
-          attrs.style = (attrs.style || "") + `text-align: ${value};`;
+      setDOMAttr: (value: unknown, attrs: Record<string, unknown>) => {
+        if (typeof value === "string" && value) {
+          const existing = typeof attrs.style === "string" ? attrs.style : "";
+          attrs.style = existing + `text-align: ${value};`;
         }
       },
     },
@@ -56,15 +57,17 @@ export const insertTable =
       return false;
     }
     if (dispatch) {
-      const empty = paragraph.createAndFill();
-      if (!empty) return false;
-      const headerCell = headerType.create(null, paragraph.createAndFill()!);
-      const bodyCell = cellType.create(null, paragraph.createAndFill()!);
+      const filled = paragraph.createAndFill();
+      if (!filled) return false;
+      // ProseMirror nodes are immutable so the same `filled` paragraph can
+      // safely back every cell — editing one cell creates a new doc with
+      // only that cell's content replaced.
+      const headerCell = headerType.create(null, filled);
+      const bodyCell = cellType.create(null, filled);
       const headerRow = rowType.create(null, [headerCell, headerCell, headerCell]);
       const bodyRow = rowType.create(null, [bodyCell, bodyCell, bodyCell]);
       const table = tableType.create(null, [headerRow, bodyRow]);
-      const tr = state.tr.replaceSelectionWith(table).scrollIntoView();
-      dispatch(tr);
+      dispatch(state.tr.replaceSelectionWith(table).scrollIntoView());
     }
     return true;
   };

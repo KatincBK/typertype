@@ -79,13 +79,24 @@ const parser = new MarkdownParser(schema, md, {
     }),
   },
   toc: { node: "toc" },
+  // markdown-it-footnote stores the original label (e.g. "1", "typora") in
+  // tok.meta.label and a numeric index in tok.meta.id. We round-trip the
+  // user-visible label so source like `[^typora]` survives a save cycle.
   footnote_ref: {
     node: "footnote_ref",
-    getAttrs: (tok) => ({ id: tok.meta?.id?.toString() ?? tok.content }),
+    getAttrs: (tok) => ({
+      id:
+        tok.meta?.label ??
+        tok.meta?.id?.toString() ??
+        tok.content ??
+        "",
+    }),
   },
   footnote: {
     block: "footnote_def",
-    getAttrs: (tok) => ({ id: tok.meta?.id?.toString() ?? "" }),
+    getAttrs: (tok) => ({
+      id: tok.meta?.label ?? tok.meta?.id?.toString() ?? "",
+    }),
   },
   footnote_anchor: { ignore: true },
   footnote_block: { ignore: true },
@@ -155,7 +166,14 @@ const serializer = new MarkdownSerializer(
     },
     footnote_def: (state, node) => {
       state.write("[^" + node.attrs.id + "]: ");
-      state.renderInline(node.firstChild ?? node);
+      // Schema guarantees footnote_def has block+ content. We render only
+      // the first textblock inline; multi-block defs collapse to their
+      // first paragraph (rare in practice). Avoids calling renderInline on
+      // a non-textblock parent which would throw.
+      const first = node.firstChild;
+      if (first?.isTextblock) {
+        state.renderInline(first);
+      }
       state.closeBlock(node);
     },
     table: (state, node) => {

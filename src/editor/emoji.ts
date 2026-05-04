@@ -368,8 +368,13 @@ export function buildEmojiPopupPlugin(): Plugin<PopupState> {
           return { active: null };
         }
 
+        // Use a 1-char placeholder for non-text leaves so parentOffset and
+        // string positions stay aligned. Trigger after any non-alphanumeric
+        // boundary (start, whitespace, punctuation, the `­` placeholder
+        // itself) so a `:` typed right after another emoji or bracket also
+        // opens the popup.
         const before = $head.parent.textBetween(0, $head.parentOffset, undefined, "­");
-        const m = /(?:^|\s):([a-z0-9_+-]{1,30})$/i.exec(before);
+        const m = /(?:^|[^A-Za-z0-9]):([a-z0-9_+-]{1,30})$/i.exec(before);
         if (!m) return { active: null };
 
         const query = m[1];

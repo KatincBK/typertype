@@ -31,6 +31,8 @@ import {
   readRecovery,
   writeRecovery,
 } from "@/lib/recovery";
+import { useTheme, type ThemePreference } from "@/lib/themes";
+import { applyUserCss, loadUserCss } from "@/lib/userCss";
 import { Sidebar } from "@/components/Sidebar";
 import { FindBar } from "@/components/FindBar";
 import "./App.css";
@@ -156,6 +158,12 @@ function App() {
   // Gate the recovery snapshot effect until we've decided whether to honor
   // the existing recovery file on startup, so we don't blindly clobber it.
   const [recoveryHandled, setRecoveryHandled] = useState(false);
+
+  // MVP-6 — theme + custom CSS
+  const theme = useTheme();
+  useEffect(() => {
+    void loadUserCss().then(applyUserCss);
+  }, []);
 
   const editorRef = useRef<EditorHandle>(null);
 
@@ -459,7 +467,10 @@ function App() {
   }, []);
 
   return (
-    <div className={`app-shell${sidebarOpen ? " has-sidebar" : ""}`}>
+    <div
+      className={`app-shell${sidebarOpen ? " has-sidebar" : ""}`}
+      data-theme={theme.effective}
+    >
       <header className="app-header">
         <h1 className="app-title">Tylike</h1>
         <span className="app-file" title={filePath ?? UNTITLED_LABEL}>
@@ -467,6 +478,19 @@ function App() {
           {dirty ? <span className="app-dirty"> ●</span> : null}
         </span>
         <span className="app-stats">{currentMd.length} karakter</span>
+        <select
+          className="app-theme-select"
+          value={theme.preference}
+          onChange={(e) =>
+            theme.setPreference(e.target.value as ThemePreference)
+          }
+          title="Tema"
+        >
+          <option value="auto">Otomatik</option>
+          <option value="light">Açık</option>
+          <option value="dark">Koyu</option>
+          <option value="sepia">Sepya</option>
+        </select>
       </header>
       <div className="app-body">
         {sidebarOpen ? (

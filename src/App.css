@@ -1,17 +1,68 @@
+/* MVP-6 — Theme tokens. Light is the default; switching the data-theme
+ * attribute on the app shell swaps the palette. Components style
+ * themselves off these CSS variables so they all theme together.
+ */
 :root {
   --bg: #ffffff;
   --fg: #1a1a1a;
   --muted: #6b7280;
   --accent: #2563eb;
+  --border: rgba(0, 0, 0, 0.16);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --bg-subtle: rgba(0, 0, 0, 0.03);
+  --bg-soft: rgba(0, 0, 0, 0.06);
+  --bg-hover: rgba(0, 0, 0, 0.05);
+  --bg-modal: #ffffff;
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --highlight: rgba(255, 230, 0, 0.5);
+  --find-match: rgba(255, 200, 0, 0.35);
+  --find-current: rgba(255, 140, 0, 0.6);
+  --find-current-outline: rgba(255, 140, 0, 0.9);
+  --selected-cell: rgba(64, 128, 255, 0.16);
+  --error-bg: #fee2e2;
+  --error-fg: #991b1b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1a1a1a;
-    --fg: #f5f5f5;
-    --muted: #9ca3af;
-    --accent: #60a5fa;
-  }
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --fg: #f5f5f5;
+  --muted: #9ca3af;
+  --accent: #60a5fa;
+  --border: rgba(255, 255, 255, 0.18);
+  --border-subtle: rgba(255, 255, 255, 0.10);
+  --bg-subtle: rgba(255, 255, 255, 0.04);
+  --bg-soft: rgba(255, 255, 255, 0.08);
+  --bg-hover: rgba(255, 255, 255, 0.07);
+  --bg-modal: #2a2a2a;
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --highlight: rgba(255, 215, 0, 0.4);
+  --find-match: rgba(255, 200, 0, 0.3);
+  --find-current: rgba(255, 165, 0, 0.55);
+  --find-current-outline: rgba(255, 165, 0, 0.85);
+  --selected-cell: rgba(96, 165, 250, 0.22);
+  --error-bg: #4a1c1c;
+  --error-fg: #fecaca;
+}
+
+[data-theme="sepia"] {
+  --bg: #f4f1ea;
+  --fg: #2d2a26;
+  --muted: #6b5e4a;
+  --accent: #8b4513;
+  --border: rgba(80, 60, 30, 0.22);
+  --border-subtle: rgba(80, 60, 30, 0.12);
+  --bg-subtle: rgba(80, 60, 30, 0.04);
+  --bg-soft: rgba(80, 60, 30, 0.08);
+  --bg-hover: rgba(139, 69, 19, 0.08);
+  --bg-modal: #faf6ec;
+  --shadow-md: 0 4px 12px rgba(80, 60, 30, 0.2);
+  --highlight: rgba(255, 200, 50, 0.5);
+  --find-match: rgba(255, 180, 0, 0.35);
+  --find-current: rgba(220, 100, 0, 0.55);
+  --find-current-outline: rgba(220, 100, 0, 0.85);
+  --selected-cell: rgba(139, 69, 19, 0.15);
+  --error-bg: #f3d7c5;
+  --error-fg: #7a2c14;
 }
 
 html,
@@ -33,9 +84,9 @@ body,
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
   padding: 0.5rem 1.5rem;
-  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+  border-bottom: 1px solid var(--border-subtle);
   background: var(--bg);
   flex-shrink: 0;
 }
@@ -44,6 +95,7 @@ body,
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .app-file {
@@ -54,7 +106,7 @@ body,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 0 1rem;
+  min-width: 0;
 }
 
 .app-dirty {
@@ -65,6 +117,24 @@ body,
 .app-stats {
   font-size: 0.8rem;
   color: var(--muted);
+  flex-shrink: 0;
+}
+
+.app-theme-select {
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.app-theme-select:hover {
+  background: var(--bg-hover);
 }
 
 .app-body {
@@ -93,10 +163,10 @@ body,
   flex-direction: column;
   gap: 4px;
   padding: 6px 8px;
-  background: var(--bg);
-  border: 1px solid rgba(127, 127, 127, 0.3);
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
   min-width: 360px;
 }
 
@@ -110,7 +180,7 @@ body,
   flex: 1;
   min-width: 0;
   padding: 4px 8px;
-  border: 1px solid rgba(127, 127, 127, 0.3);
+  border: 1px solid var(--border);
   border-radius: 3px;
   background: var(--bg);
   color: var(--fg);
@@ -135,7 +205,7 @@ body,
 .find-btn {
   appearance: none;
   background: transparent;
-  border: 1px solid rgba(127, 127, 127, 0.3);
+  border: 1px solid var(--border);
   border-radius: 3px;
   color: inherit;
   font: inherit;
@@ -146,7 +216,7 @@ body,
 }
 
 .find-btn:hover:not(:disabled) {
-  background: rgba(127, 127, 127, 0.1);
+  background: var(--bg-hover);
 }
 
 .find-btn:disabled {
@@ -155,7 +225,7 @@ body,
 }
 
 .find-btn.is-active {
-  background: rgba(64, 128, 255, 0.18);
+  background: var(--bg-soft);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -173,12 +243,12 @@ body,
 
 /* Match decorations injected by the find plugin */
 .editor .ProseMirror .find-match {
-  background: rgba(255, 200, 0, 0.35);
+  background: var(--find-match);
   border-radius: 2px;
 }
 .editor .ProseMirror .find-current {
-  background: rgba(255, 140, 0, 0.6);
-  outline: 1px solid rgba(255, 140, 0, 0.9);
+  background: var(--find-current);
+  outline: 1px solid var(--find-current-outline);
 }
 
 /* MVP-3 — sidebar */
@@ -188,8 +258,8 @@ body,
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid rgba(127, 127, 127, 0.2);
-  background: rgba(127, 127, 127, 0.04);
+  border-right: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
   overflow: hidden;
 }
 
@@ -200,7 +270,7 @@ body,
 }
 
 .sidebar-section + .sidebar-section {
-  border-top: 1px solid rgba(127, 127, 127, 0.2);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .sidebar-section-header {
@@ -219,7 +289,7 @@ body,
 .sidebar-action {
   appearance: none;
   background: transparent;
-  border: 1px solid rgba(127, 127, 127, 0.3);
+  border: 1px solid var(--border);
   color: inherit;
   font: inherit;
   font-size: 0.72rem;
@@ -229,7 +299,7 @@ body,
 }
 
 .sidebar-action:hover {
-  background: rgba(127, 127, 127, 0.1);
+  background: var(--bg-hover);
 }
 
 .sidebar-root {
@@ -292,11 +362,11 @@ body,
 }
 
 .sidebar-recent:hover {
-  background: rgba(127, 127, 127, 0.12);
+  background: var(--bg-hover);
 }
 
 .sidebar-recent.is-active {
-  background: rgba(64, 128, 255, 0.18);
+  background: var(--bg-soft);
   color: var(--accent);
 }
 
@@ -332,11 +402,11 @@ body,
 
 .file-tree-leaf:hover,
 .file-tree-folder-header:hover {
-  background: rgba(127, 127, 127, 0.12);
+  background: var(--bg-hover);
 }
 
 .file-tree-leaf.is-active {
-  background: rgba(64, 128, 255, 0.18);
+  background: var(--bg-soft);
   color: var(--accent);
   font-weight: 500;
 }
@@ -390,7 +460,7 @@ body,
 }
 
 .outline-item:hover {
-  background: rgba(127, 127, 127, 0.12);
+  background: var(--bg-hover);
 }
 
 .outline-h1 { padding-left: 6px; font-weight: 600; }
@@ -434,26 +504,18 @@ body,
 }
 
 .editor .ProseMirror code {
-  background: rgba(127, 127, 127, 0.15);
+  background: var(--bg-soft);
   padding: 0.15em 0.35em;
   border-radius: 3px;
   font-family: "Consolas", "Monaco", monospace;
   font-size: 0.9em;
 }
 
-.editor .ProseMirror pre {
-  background: rgba(127, 127, 127, 0.1);
-  padding: 1em;
-  border-radius: 6px;
-  overflow-x: auto;
-  font-family: "Consolas", "Monaco", monospace;
-  line-height: 1.5;
-}
-
-.editor .ProseMirror pre code {
-  background: transparent;
-  padding: 0;
-}
+/* All <pre> instances inside the editor are wrapped by a NodeView
+ * (.code-block, .math-block-source) that owns their styling — see
+ * editor.css. We deliberately don't define a global .editor .ProseMirror
+ * pre rule here so those wrapper-specific paddings/backgrounds win.
+ */
 
 .editor .ProseMirror ul,
 .editor .ProseMirror ol {
@@ -463,7 +525,7 @@ body,
 
 .editor .ProseMirror hr {
   border: none;
-  border-top: 1px solid var(--muted);
+  border-top: 1px solid var(--border);
   margin: 1.5em 0;
 }
 
@@ -479,7 +541,7 @@ body,
 }
 
 .editor .ProseMirror mark {
-  background: rgba(255, 230, 0, 0.5);
+  background: var(--highlight);
   padding: 0 0.15em;
   border-radius: 2px;
 }
@@ -509,8 +571,8 @@ body,
 
 .error-boundary pre {
   white-space: pre-wrap;
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--error-bg);
+  color: var(--error-fg);
   padding: 1rem;
   border-radius: 4px;
 }

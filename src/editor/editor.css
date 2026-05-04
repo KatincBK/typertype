@@ -1,4 +1,7 @@
-/* Editor block styles for math, mermaid, emoji, footnote, toc, tables. */
+/* Editor block styles for math, mermaid, emoji, footnote, toc, tables.
+ * All theme-sensitive colors come from the CSS variables defined in
+ * App.css so dark / sepia / light all share the same palette.
+ */
 
 /* ---------- Math ---------- */
 
@@ -10,21 +13,21 @@
 }
 
 .math-inline:hover {
-  background: rgba(64, 128, 255, 0.08);
+  background: var(--bg-hover);
 }
 
 .math-block {
   margin: 0.8em 0;
   padding: 0.6em 0.8em;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--bg-subtle);
 }
 
 .math-block-source {
   margin: 0 0 0.4em 0;
   padding: 0.4em 0.6em;
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-soft);
   border-radius: 3px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   font-size: 0.9em;
@@ -44,7 +47,7 @@
 
 .math-empty,
 .mermaid-empty {
-  color: rgba(0, 0, 0, 0.4);
+  color: var(--muted);
   font-style: italic;
 }
 
@@ -57,7 +60,7 @@
 .code-block pre {
   margin: 0;
   padding: 0.6em 0.8em;
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-soft);
   border-radius: 4px;
   overflow-x: auto;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -71,16 +74,16 @@
 }
 
 .code-mermaid {
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 0.4em;
-  background: rgba(0, 0, 0, 0.01);
+  background: var(--bg-subtle);
 }
 
 .mermaid-preview {
   margin-top: 0.6em;
   padding: 0.6em;
-  background: white;
+  background: var(--bg-modal);
   border-radius: 3px;
   text-align: center;
   min-height: 1em;
@@ -119,10 +122,11 @@
 .emoji-popup {
   position: fixed;
   z-index: 1000;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--bg-modal);
+  color: var(--fg);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-md);
   padding: 4px;
   min-width: 180px;
   max-height: 240px;
@@ -141,7 +145,7 @@
 
 .emoji-popup-item:hover,
 .emoji-popup-item.selected {
-  background: rgba(64, 128, 255, 0.12);
+  background: var(--bg-soft);
 }
 
 .emoji-popup-char {
@@ -149,7 +153,7 @@
 }
 
 .emoji-popup-code {
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--muted);
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.85em;
 }
@@ -159,22 +163,22 @@
 .toc {
   margin: 0.8em 0;
   padding: 0.6em 0.8em;
-  border: 1px dashed rgba(0, 0, 0, 0.16);
+  border: 1px dashed var(--border);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--bg-subtle);
 }
 
 .toc-title {
   font-weight: 600;
   margin-bottom: 0.4em;
   font-size: 0.9em;
-  color: rgba(0, 0, 0, 0.7);
+  color: var(--muted);
 }
 
 .toc-item {
   padding: 1px 0;
   font-size: 0.9em;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--fg);
 }
 
 .toc-h1 { padding-left: 0; font-weight: 600; }
@@ -185,14 +189,14 @@
 .toc-h6 { padding-left: 5em; }
 
 .toc-empty {
-  color: rgba(0, 0, 0, 0.4);
+  color: var(--muted);
   font-style: italic;
 }
 
 /* ---------- Footnote ---------- */
 
 .footnote-ref {
-  color: #2563eb;
+  color: var(--accent);
   font-weight: 600;
   cursor: pointer;
 }
@@ -200,15 +204,15 @@
 .footnote-def {
   margin: 0.4em 0;
   padding: 0.4em 0.6em;
-  border-left: 3px solid rgba(0, 0, 0, 0.16);
-  background: rgba(0, 0, 0, 0.02);
+  border-left: 3px solid var(--border);
+  background: var(--bg-subtle);
   font-size: 0.9em;
 }
 
 .footnote-def[data-id]::before {
   content: "[" attr(data-id) "] ";
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.55);
+  color: var(--muted);
 }
 
 /* ---------- Tables ---------- */
@@ -222,7 +226,7 @@
 
 .editor table td,
 .editor table th {
-  border: 1px solid rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--border);
   padding: 0.4em 0.6em;
   vertical-align: top;
   position: relative;
@@ -230,12 +234,12 @@
 }
 
 .editor table th {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-soft);
   font-weight: 600;
 }
 
 .editor table .selectedCell {
-  background: rgba(64, 128, 255, 0.16);
+  background: var(--selected-cell);
 }
 
 .editor table .column-resize-handle {
@@ -246,16 +250,18 @@
   width: 4px;
   cursor: col-resize;
   z-index: 20;
-  background: rgba(64, 128, 255, 0.3);
+  background: var(--accent);
+  opacity: 0.4;
 }
 
 .table-toolbar {
   position: fixed;
   z-index: 1000;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--bg-modal);
+  color: var(--fg);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-md);
   padding: 4px;
   display: flex;
   gap: 4px;
@@ -263,15 +269,17 @@
 
 .table-toolbar-btn {
   appearance: none;
-  background: white;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--border-subtle);
   border-radius: 3px;
   padding: 4px 8px;
+  font: inherit;
   font-size: 0.85em;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .table-toolbar-btn:hover {
-  background: rgba(64, 128, 255, 0.1);
+  background: var(--bg-hover);
 }

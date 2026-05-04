@@ -25,6 +25,20 @@ fn user_config_path(app: &tauri::AppHandle) -> Result<PathBuf, tauri::Error> {
     Ok(dir.join("conf").join("conf.user.json"))
 }
 
+// MVP-6 — load the user's optional custom CSS from
+// %APPDATA%\Tylike\themes\custom.css (or platform equivalent). Empty
+// string when the file is missing so the frontend can treat absence as
+// "no custom CSS" without an error.
+#[tauri::command]
+fn read_user_css(app: tauri::AppHandle) -> Result<String, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    let path = dir.join("themes").join("custom.css");
+    if !path.exists() {
+        return Ok(String::new());
+    }
+    std::fs::read_to_string(&path).map_err(|e| format!("read {}: {}", path.display(), e))
+}
+
 // MVP-2 — file I/O. Native open / save dialogs use the `rfd` crate; the
 // read / write commands are plain std::fs calls. Returning Result<_, String>
 // so the frontend gets a Promise that rejects with a readable message on
@@ -218,6 +232,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             read_user_config,
+            read_user_css,
             open_file_dialog,
             save_file_dialog,
             read_text_file,

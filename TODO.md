@@ -46,7 +46,7 @@ Editör Typora seviyesine gelince bu sırayla devam:
 3. [x] **MVP-3**: Sidebar — klasör tree + dosya listesi
 4. [x] **MVP-4**: Find & Replace (Ctrl+F/H)
 5. [x] **MVP-5**: Auto-save + crash recovery + recent files
-6. [ ] **MVP-6**: Tema sistemi (light/dark + custom CSS)
+6. [x] **MVP-6**: Tema sistemi (light/dark + custom CSS)
 7. [ ] **MVP-7**: Export (PDF, HTML, DOCX via Pandoc)
 8. [ ] **MVP-8**: Settings UI
 9. [ ] **MVP-9**: Build & dağıtım (MSI + auto-updater)

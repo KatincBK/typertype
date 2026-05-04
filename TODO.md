@@ -44,7 +44,7 @@ Editör Typora seviyesine gelince bu sırayla devam:
 1. [x] **MVP-1**: ProseMirror WYSIWYG + typing rules + kısayollar
 2. [x] **MVP-2**: Dosya I/O (open/save/save-as, Ctrl+S/O, dirty indicator)
 3. [x] **MVP-3**: Sidebar — klasör tree + dosya listesi
-4. [ ] **MVP-4**: Find & Replace (Ctrl+F/H)
+4. [x] **MVP-4**: Find & Replace (Ctrl+F/H)
 5. [ ] **MVP-5**: Auto-save + crash recovery + recent files
 6. [ ] **MVP-6**: Tema sistemi (light/dark + custom CSS)
 7. [ ] **MVP-7**: Export (PDF, HTML, DOCX via Pandoc)

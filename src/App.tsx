@@ -5,7 +5,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { Editor, type EditorHandle } from "@/editor";
+import {
+  Editor,
+  DEFAULT_FIND_OPTIONS,
+  type EditorHandle,
+  type FindOptions,
+  type FindReportStatus,
+} from "@/editor";
 import {
   basename,
   pickSavePath,
@@ -20,6 +26,7 @@ import {
 } from "@/lib/folderIO";
 import { extractHeadings } from "@/lib/headings";
 import { Sidebar } from "@/components/Sidebar";
+import { FindBar } from "@/components/FindBar";
 import "./App.css";
 
 const SAMPLE_MARKDOWN = `# Tylike
@@ -101,7 +108,7 @@ Bu cümlede bir dipnot[^1] var, ardından bir tane daha[^typora].
 - Math block \`Ctrl+Shift+M\`, code fence \`Ctrl+Shift+K\`, table \`Ctrl+T\`
 - Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+]\`, numbered: \`Ctrl+Shift+[\`
 - Dosya: \`Ctrl+N\` (yeni), \`Ctrl+O\` (aç), \`Ctrl+S\` (kaydet), \`Ctrl+Shift+S\` (farklı kaydet)
-- Sidebar: \`Ctrl+Shift+L\`
+- Sidebar: \`Ctrl+Shift+L\`, Bul: \`Ctrl+F\`, Değiştir: \`Ctrl+H\`, Sonraki: \`F3\`
 - Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;
 
@@ -122,6 +129,22 @@ function App() {
   const [rootPath, setRootPath] = useState<string | null>(null);
   const [tree, setTree] = useState<FileEntry | null>(null);
 
+  // MVP-4 — find/replace state. The query / options / replacement live in
+  // App so React can drive the input fields; the actual matches and
+  // current-index live in the find plugin and are mirrored back here via
+  // the editor's onFindChange callback.
+  const [findOpen, setFindOpen] = useState(false);
+  const [findMode, setFindMode] = useState<"find" | "replace">("find");
+  const [findQuery, setFindQuery] = useState("");
+  const [findReplacement, setFindReplacement] = useState("");
+  const [findOptions, setFindOptions] = useState<FindOptions>({
+    ...DEFAULT_FIND_OPTIONS,
+  });
+  const [findStatus, setFindStatus] = useState<FindReportStatus>({
+    matchCount: 0,
+    currentIndex: -1,
+  });
+
   const editorRef = useRef<EditorHandle>(null);
 
   const dirty = currentMd !== savedMd;
@@ -134,12 +157,24 @@ function App() {
     return window.confirm(DIRTY_CONFIRM);
   }, [dirty]);
 
-  const loadFile = useCallback((path: string, content: string) => {
-    setLoadedMd(content);
-    setSavedMd(content);
-    setCurrentMd(content);
-    setFilePath(path);
+  const closeFind = useCallback(() => {
+    setFindOpen(false);
+    setFindQuery("");
+    editorRef.current?.findClose();
   }, []);
+
+  const loadFile = useCallback(
+    (path: string, content: string) => {
+      setLoadedMd(content);
+      setSavedMd(content);
+      setCurrentMd(content);
+      setFilePath(path);
+      // The editor remounts — its plugin state is gone. Drop our mirror
+      // too so a stale "3 / 5" doesn't linger in the bar.
+      closeFind();
+    },
+    [closeFind],
+  );
 
   const handleNew = useCallback(() => {
     if (!confirmDiscardDirty()) return;
@@ -147,7 +182,8 @@ function App() {
     setSavedMd("");
     setCurrentMd("");
     setFilePath(null);
-  }, [confirmDiscardDirty]);
+    closeFind();
+  }, [confirmDiscardDirty, closeFind]);
 
   const handleOpen = useCallback(async () => {
     if (!confirmDiscardDirty()) return;
@@ -208,12 +244,35 @@ function App() {
     setSidebarOpen((v) => !v);
   }, []);
 
+  // MVP-4 — find/replace handlers
+  const openFind = useCallback((mode: "find" | "replace") => {
+    setFindMode(mode);
+    setFindOpen(true);
+  }, []);
+
+  const handleOptionToggle = useCallback((key: keyof FindOptions) => {
+    setFindOptions((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  // Push the active query / options into the editor's plugin whenever they
+  // change. Cleared via closeFind() instead of here to keep the dispatch
+  // logic simple.
+  useEffect(() => {
+    if (!findOpen) return;
+    editorRef.current?.findSet(findQuery, findOptions);
+  }, [findOpen, findQuery, findOptions]);
+
   const handlersRef = useRef({
     handleSave,
     handleSaveAs,
     handleOpen,
     handleNew,
     toggleSidebar,
+    openFind,
+    closeFind,
+    findNext: () => editorRef.current?.findNext(),
+    findPrev: () => editorRef.current?.findPrev(),
+    findOpen,
   });
   handlersRef.current = {
     handleSave,
@@ -221,13 +280,36 @@ function App() {
     handleOpen,
     handleNew,
     toggleSidebar,
+    openFind,
+    closeFind,
+    findNext: () => editorRef.current?.findNext(),
+    findPrev: () => editorRef.current?.findPrev(),
+    findOpen,
   };
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      const h = handlersRef.current;
       const mod = e.ctrlKey || e.metaKey;
+
+      // F3 / Shift+F3 work without a modifier
+      if (e.key === "F3") {
+        e.preventDefault();
+        if (e.shiftKey) h.findPrev();
+        else h.findNext();
+        return;
+      }
+
+      // Esc closes the find bar even when focus is back in the editor —
+      // otherwise users get stuck with stale highlights and no obvious way
+      // to dismiss them after clicking back into the document.
+      if (e.key === "Escape" && h.findOpen) {
+        e.preventDefault();
+        h.closeFind();
+        return;
+      }
+
       if (!mod) return;
       const key = e.key.toLowerCase();
-      const h = handlersRef.current;
       if (key === "s" && !e.shiftKey) {
         e.preventDefault();
         void h.handleSave();
@@ -243,6 +325,12 @@ function App() {
       } else if (key === "l" && e.shiftKey) {
         e.preventDefault();
         h.toggleSidebar();
+      } else if (key === "f" && !e.shiftKey) {
+        e.preventDefault();
+        h.openFind("find");
+      } else if (key === "h" && !e.shiftKey) {
+        e.preventDefault();
+        h.openFind("replace");
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -272,10 +360,32 @@ function App() {
           />
         ) : null}
         <main className="app-main">
+          {findOpen ? (
+            <FindBar
+              mode={findMode}
+              query={findQuery}
+              replacement={findReplacement}
+              options={findOptions}
+              status={findStatus}
+              onQueryChange={setFindQuery}
+              onReplacementChange={setFindReplacement}
+              onOptionToggle={handleOptionToggle}
+              onFindNext={() => editorRef.current?.findNext()}
+              onFindPrev={() => editorRef.current?.findPrev()}
+              onReplaceCurrent={() =>
+                editorRef.current?.replaceCurrent(findReplacement)
+              }
+              onReplaceAll={() =>
+                editorRef.current?.replaceAll(findReplacement)
+              }
+              onClose={closeFind}
+            />
+          ) : null}
           <Editor
             ref={editorRef}
             initialMarkdown={loadedMd}
             onChange={setCurrentMd}
+            onFindChange={setFindStatus}
           />
         </main>
       </div>

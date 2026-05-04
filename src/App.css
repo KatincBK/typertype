@@ -77,7 +77,108 @@ body,
   flex: 1;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   min-width: 0;
+  position: relative;
+}
+
+/* MVP-4 — find / replace bar */
+
+.find-bar {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 360px;
+}
+
+.find-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.find-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 3px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.find-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+.find-status {
+  font-size: 0.78rem;
+  color: var(--muted);
+  min-width: 60px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.find-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 3px;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 3px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.find-btn:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.1);
+}
+
+.find-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.find-btn.is-active {
+  background: rgba(64, 128, 255, 0.18);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.find-toggle {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  min-width: 28px;
+}
+
+.find-close {
+  border: none;
+  font-size: 1.1em;
+  padding: 0 6px;
+}
+
+/* Match decorations injected by the find plugin */
+.editor .ProseMirror .find-match {
+  background: rgba(255, 200, 0, 0.35);
+  border-radius: 2px;
+}
+.editor .ProseMirror .find-current {
+  background: rgba(255, 140, 0, 0.6);
+  outline: 1px solid rgba(255, 140, 0, 0.9);
 }
 
 /* MVP-3 — sidebar */

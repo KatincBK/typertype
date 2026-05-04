@@ -28,36 +28,51 @@ import { buildFootnoteNodeView } from "./footnote";
 import { buildTablePlugins, buildTableToolbarPlugin } from "./tables";
 import { buildFocusBlockPlugin } from "./focusBlock";
 import { loadUserConfig } from "./customConfig";
+import {
+  buildFindPlugin,
+  findPluginKey,
+  type FindOptions,
+  type FindStatus,
+} from "./find";
 import { logger } from "@/lib/logger";
 
 import "prosemirror-view/style/prosemirror.css";
 import "prosemirror-tables/style/tables.css";
 import "./editor.css";
 
+export interface FindReportStatus {
+  matchCount: number;
+  currentIndex: number;
+}
+
 interface EditorProps {
   initialMarkdown?: string;
   onChange?: (markdown: string) => void;
+  onFindChange?: (status: FindReportStatus) => void;
 }
 
-// Imperative handle exposed to App so the outline panel can scroll the
-// editor to a clicked heading. The Editor itself stays uncontrolled.
-//
-// Jump-by-index instead of jump-by-text because heading textContent in the
-// doc strips inline marks and atom nodes (emoji, math_inline) — which
-// extractHeadings on the raw markdown sees verbatim. Matching positionally
-// avoids the comparison mismatch entirely.
+// Imperative handle exposed to App so the outline panel and the find bar
+// can drive the editor without making it a fully controlled component.
 export interface EditorHandle {
   scrollToHeadingByIndex: (index: number) => void;
+  findSet: (query: string, options: FindOptions) => void;
+  findNext: () => void;
+  findPrev: () => void;
+  findClose: () => void;
+  replaceCurrent: (replacement: string) => void;
+  replaceAll: (replacement: string) => void;
 }
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
-  { initialMarkdown = "", onChange },
+  { initialMarkdown = "", onChange, onFindChange },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onFindChangeRef = useRef(onFindChange);
+  onFindChangeRef.current = onFindChange;
 
   // Adım 13 — load user keymap overrides on mount. Editor mounts only after
   // the config has been loaded (or failed gracefully) so the keymap is
@@ -73,6 +88,26 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       cancelled = true;
     };
   }, []);
+
+  // Find/replace helpers used by the imperative handle. Each one operates
+  // on viewRef.current so they're inert when the editor isn't mounted.
+  const advanceAndScroll = (direction: "next" | "prev") => {
+    const view = viewRef.current;
+    if (!view) return;
+    const status = findPluginKey.getState(view.state);
+    if (!status || status.matches.length === 0) return;
+    const total = status.matches.length;
+    const dir = direction === "next" ? 1 : -1;
+    const idx = ((status.currentIndex + dir) % total + total) % total;
+    const m = status.matches[idx];
+    view.dispatch(
+      view.state.tr
+        .setMeta(findPluginKey, { type: "select", index: idx })
+        .setSelection(TextSelection.create(view.state.doc, m.from, m.to))
+        .scrollIntoView(),
+    );
+    view.focus();
+  };
 
   useImperativeHandle(
     ref,
@@ -99,6 +134,77 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         view.dispatch(tr.scrollIntoView());
         view.focus();
       },
+      findSet(query, options) {
+        const view = viewRef.current;
+        if (!view) return;
+        view.dispatch(
+          view.state.tr.setMeta(findPluginKey, {
+            type: "set",
+            query,
+            options,
+          }),
+        );
+      },
+      findNext() {
+        advanceAndScroll("next");
+      },
+      findPrev() {
+        advanceAndScroll("prev");
+      },
+      findClose() {
+        const view = viewRef.current;
+        if (!view) return;
+        view.dispatch(view.state.tr.setMeta(findPluginKey, { type: "clear" }));
+      },
+      replaceCurrent(replacement) {
+        const view = viewRef.current;
+        if (!view) return;
+        const status = findPluginKey.getState(view.state);
+        if (!status || status.currentIndex < 0) return;
+        const match = status.matches[status.currentIndex];
+        const tr = view.state.tr;
+        // Preserve the marks at the start of the match so replacing inside
+        // bold / em / etc. text keeps the styling.
+        const startNode = view.state.doc.nodeAt(match.from);
+        const marks = startNode?.marks ?? [];
+        if (replacement) {
+          tr.replaceWith(
+            match.from,
+            match.to,
+            view.state.schema.text(replacement, marks),
+          );
+        } else {
+          tr.delete(match.from, match.to);
+        }
+        view.dispatch(tr.scrollIntoView());
+        // Plugin recomputes matches on docChanged; advance to next manually
+        // after dispatch so the user sees the cursor land on the next hit.
+        queueMicrotask(() => advanceAndScroll("next"));
+      },
+      replaceAll(replacement) {
+        const view = viewRef.current;
+        if (!view) return;
+        const status = findPluginKey.getState(view.state);
+        if (!status || status.matches.length === 0) return;
+        const tr = view.state.tr;
+        // Apply from end to start so earlier offsets stay valid (replaces
+        // before this point don't shift positions ≤ this match's start).
+        const ordered = [...status.matches].sort((a, b) => b.from - a.from);
+        for (const m of ordered) {
+          const startNode = view.state.doc.nodeAt(m.from);
+          const marks = startNode?.marks ?? [];
+          if (replacement) {
+            tr.replaceWith(
+              m.from,
+              m.to,
+              view.state.schema.text(replacement, marks),
+            );
+          } else {
+            tr.delete(m.from, m.to);
+          }
+        }
+        view.dispatch(tr);
+      },
     }),
     [],
   );
@@ -121,12 +227,14 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         buildFocusBlockPlugin(),
         buildTableToolbarPlugin(),
         ...buildTablePlugins(),
+        buildFindPlugin(),
         buildKeymap(schema, overrides),
         keymap(baseKeymap),
         history(),
       ],
     });
 
+    let lastReported: FindStatus | null = null;
     const view = new EditorView(containerRef.current, {
       state,
       nodeViews: {
@@ -141,6 +249,20 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         view.updateState(next);
         if (tr.docChanged) {
           onChangeRef.current?.(docToMarkdown(next.doc));
+        }
+        const findStatus = findPluginKey.getState(next);
+        if (findStatus) {
+          if (
+            !lastReported ||
+            lastReported.matches !== findStatus.matches ||
+            lastReported.currentIndex !== findStatus.currentIndex
+          ) {
+            onFindChangeRef.current?.({
+              matchCount: findStatus.matches.length,
+              currentIndex: findStatus.currentIndex,
+            });
+            lastReported = findStatus;
+          }
         }
       },
     });

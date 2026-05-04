@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Editor } from "@/editor";
 import {
   basename,
@@ -160,28 +160,36 @@ function App() {
   // its own focus subtree and ProseMirror's keymap doesn't see Ctrl+S unless
   // it's explicitly bound there. We preventDefault so the browser's "save
   // page" dialog never appears.
+  //
+  // The handlers close over currentMd / filePath / dirty, all of which
+  // update on every keystroke. We funnel them through a ref so the
+  // window-level listener is only attached once instead of being detached
+  // and re-attached after every character the user types.
+  const handlersRef = useRef({ handleSave, handleSaveAs, handleOpen, handleNew });
+  handlersRef.current = { handleSave, handleSaveAs, handleOpen, handleNew };
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const mod = e.ctrlKey || e.metaKey;
       if (!mod) return;
       const key = e.key.toLowerCase();
+      const h = handlersRef.current;
       if (key === "s" && !e.shiftKey) {
         e.preventDefault();
-        void handleSave();
+        void h.handleSave();
       } else if (key === "s" && e.shiftKey) {
         e.preventDefault();
-        void handleSaveAs();
+        void h.handleSaveAs();
       } else if (key === "o" && !e.shiftKey) {
         e.preventDefault();
-        void handleOpen();
+        void h.handleOpen();
       } else if (key === "n" && !e.shiftKey) {
         e.preventDefault();
-        handleNew();
+        h.handleNew();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleSave, handleSaveAs, handleOpen, handleNew]);
+  }, []);
 
   return (
     <div className="app-shell">

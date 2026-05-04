@@ -42,7 +42,7 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 Editör Typora seviyesine gelince bu sırayla devam:
 
 1. [x] **MVP-1**: ProseMirror WYSIWYG + typing rules + kısayollar
-2. [ ] **MVP-2**: Dosya I/O (open/save/save-as, Ctrl+S/O, dirty indicator)
+2. [x] **MVP-2**: Dosya I/O (open/save/save-as, Ctrl+S/O, dirty indicator)
 3. [ ] **MVP-3**: Sidebar — klasör tree + dosya listesi
 4. [ ] **MVP-4**: Find & Replace (Ctrl+F/H)
 5. [ ] **MVP-5**: Auto-save + crash recovery + recent files

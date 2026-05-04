@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Editor } from "@/editor";
+import {
+  basename,
+  pickSavePath,
+  safeOpenFile,
+  safeSaveFile,
+} from "@/lib/fileIO";
 import "./App.css";
 
 const SAMPLE_MARKDOWN = `# Tylike
@@ -80,20 +86,115 @@ Bu cümlede bir dipnot[^1] var, ardından bir tane daha[^typora].
 - Bold \`Ctrl+B\`, italic \`Ctrl+I\`, underline \`Ctrl+U\`, strike \`Alt+Shift+5\`
 - Math block \`Ctrl+Shift+M\`, code fence \`Ctrl+Shift+K\`, table \`Ctrl+T\`
 - Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+]\`, numbered: \`Ctrl+Shift+[\`
+- Dosya: \`Ctrl+N\` (yeni), \`Ctrl+O\` (aç), \`Ctrl+S\` (kaydet), \`Ctrl+Shift+S\` (farklı kaydet)
 - Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;
 
+const UNTITLED_LABEL = "Adsız";
+const DIRTY_CONFIRM =
+  "Kaydedilmemiş değişiklikler kaybolacak. Devam etmek istiyor musunuz?";
+
 function App() {
-  const [markdown, setMarkdown] = useState(SAMPLE_MARKDOWN);
+  // Three snapshots:
+  //   loadedMd  — what the editor was last initialized with. Drives the
+  //               <Editor> remount so it ONLY changes on new / open.
+  //   savedMd   — what's currently on disk. Drives the dirty indicator
+  //               (savedMd === currentMd ⇒ clean). Save updates this in
+  //               place WITHOUT remounting the editor and losing caret.
+  //   currentMd — live editor content, fed by Editor.onChange.
+  const [filePath, setFilePath] = useState<string | null>(null);
+  const [loadedMd, setLoadedMd] = useState(SAMPLE_MARKDOWN);
+  const [savedMd, setSavedMd] = useState(SAMPLE_MARKDOWN);
+  const [currentMd, setCurrentMd] = useState(SAMPLE_MARKDOWN);
+
+  const dirty = currentMd !== savedMd;
+  const fileLabel = filePath ? basename(filePath) : UNTITLED_LABEL;
+
+  const confirmDiscardDirty = useCallback(() => {
+    if (!dirty) return true;
+    return window.confirm(DIRTY_CONFIRM);
+  }, [dirty]);
+
+  const handleNew = useCallback(() => {
+    if (!confirmDiscardDirty()) return;
+    setLoadedMd("");
+    setSavedMd("");
+    setCurrentMd("");
+    setFilePath(null);
+  }, [confirmDiscardDirty]);
+
+  const handleOpen = useCallback(async () => {
+    if (!confirmDiscardDirty()) return;
+    const opened = await safeOpenFile();
+    if (!opened) return;
+    setLoadedMd(opened.content);
+    setSavedMd(opened.content);
+    setCurrentMd(opened.content);
+    setFilePath(opened.path);
+  }, [confirmDiscardDirty]);
+
+  const handleSave = useCallback(async () => {
+    let target = filePath;
+    if (!target) {
+      target = await pickSavePath(UNTITLED_LABEL + ".md");
+      if (!target) return;
+    }
+    const ok = await safeSaveFile(target, currentMd);
+    if (!ok) return;
+    setFilePath(target);
+    setSavedMd(currentMd); // loadedMd intentionally unchanged → no remount
+  }, [filePath, currentMd]);
+
+  const handleSaveAs = useCallback(async () => {
+    const target = await pickSavePath(
+      fileLabel.endsWith(".md") ? fileLabel : fileLabel + ".md",
+    );
+    if (!target) return;
+    const ok = await safeSaveFile(target, currentMd);
+    if (!ok) return;
+    setFilePath(target);
+    setSavedMd(currentMd);
+  }, [fileLabel, currentMd]);
+
+  // Window-level shortcuts. Bound on document because the editor lives in
+  // its own focus subtree and ProseMirror's keymap doesn't see Ctrl+S unless
+  // it's explicitly bound there. We preventDefault so the browser's "save
+  // page" dialog never appears.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const mod = e.ctrlKey || e.metaKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === "s" && !e.shiftKey) {
+        e.preventDefault();
+        void handleSave();
+      } else if (key === "s" && e.shiftKey) {
+        e.preventDefault();
+        void handleSaveAs();
+      } else if (key === "o" && !e.shiftKey) {
+        e.preventDefault();
+        void handleOpen();
+      } else if (key === "n" && !e.shiftKey) {
+        e.preventDefault();
+        handleNew();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleSave, handleSaveAs, handleOpen, handleNew]);
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <h1 className="app-title">Tylike</h1>
-        <span className="app-stats">{markdown.length} karakter</span>
+        <span className="app-file" title={filePath ?? UNTITLED_LABEL}>
+          {fileLabel}
+          {dirty ? <span className="app-dirty"> ●</span> : null}
+        </span>
+        <span className="app-stats">{currentMd.length} karakter</span>
       </header>
       <main className="app-main">
-        <Editor initialMarkdown={SAMPLE_MARKDOWN} onChange={setMarkdown} />
+        <Editor initialMarkdown={loadedMd} onChange={setCurrentMd} />
       </main>
     </div>
   );

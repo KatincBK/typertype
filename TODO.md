@@ -18,10 +18,10 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 |---|---|---|---|
 | 1 | Schema genişletme: strikethrough, highlight, sub, sup, underline mark'ları | 30 dk | [x] |
 | 2 | Yeni inline typing rules: `~~`, `==`, `~sub~`, `^sup^` (live-format plugin) | 30 dk | [x] |
-| 3 | A tercihi: block trigger Enter ile (heading/quote/list/code) + code block çıkış UX | 1 saat | [ ] |
-| 4 | Klavye kısayolları Typora ile birebir eşle | 1 saat | [ ] |
-| 5 | Auto-Pair plugin (brackets, quotes, markdown chars) | 1 saat | [ ] |
-| 6 | SmartyPants: `--`, `---`, `...`, curly quotes | 30 dk | [ ] |
+| 3 | A tercihi: block trigger Enter ile (heading/quote/list/code) + code block çıkış UX | 1 saat | [x] |
+| 4 | Klavye kısayolları Typora ile birebir eşle | 1 saat | [x] |
+| 5 | Auto-Pair plugin (brackets, quotes, markdown chars) | 1 saat | [x] (sadece brackets — quotes smartQuotes ile, markdown chars live-format ile) |
+| 6 | SmartyPants: `--`, `---`, `...`, curly quotes | 30 dk | [x] |
 | 7 | Emoji shortcode (`:smile:`) + auto-complete popup | 1.5 saat | [ ] |
 | 8 | Math block (KaTeX): `$$..$$` ve `$..$` rendering | 2 saat | [ ] |
 | 9 | Mermaid diyagramlar (`\`\`\`mermaid`) | 1.5 saat | [ ] |
@@ -33,7 +33,7 @@ Bu adımlar tamamlanana kadar dosya I/O, sidebar, export gibi diğer fazlar **er
 
 **Toplam ~17 saat** çekirdek kod. Detaylar `CONTROLS.md`'de.
 
-> **A tercihi notu**: Block elementler (heading, quote, list, code fence) Typora gibi sadece **Enter** tuşunda dönüşecek (şu an space tetikliyor — Adım 3'te değişecek).
+> **A tercihi notu**: Block elementler (heading, quote, list, code fence) sadece **Enter** tuşunda dönüşür. Implementasyon `src/editor/blockEnter.ts`'te; eski space tabanlı input rules kaldırıldı. Code block içinde son satır boş + Enter → blok dışına çıkar.
 
 ---
 

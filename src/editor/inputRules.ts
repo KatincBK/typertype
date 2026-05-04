@@ -1,53 +1,17 @@
 import {
   inputRules,
-  textblockTypeInputRule,
-  wrappingInputRule,
   smartQuotes,
-  emDash,
   ellipsis,
 } from "prosemirror-inputrules";
-import type { NodeType, Schema } from "prosemirror-model";
+import type { Schema } from "prosemirror-model";
+import { smartyPantsRules } from "./smartypants";
 
-// Inline mark conversions are handled by the live-format plugin.
-// This file only contains block-level rules that fire on space (heading, quote,
-// list, code fence) — these need to react synchronously to typing because they
-// change block structure, not just inline marks.
-
-function headingRule(nodeType: NodeType, maxLevel: number) {
-  return textblockTypeInputRule(
-    new RegExp("^(#{1," + maxLevel + "})\\s$"),
-    nodeType,
-    (match) => ({ level: match[1].length }),
-  );
-}
-
-function blockQuoteRule(nodeType: NodeType) {
-  return wrappingInputRule(/^\s*>\s$/, nodeType);
-}
-
-function orderedListRule(nodeType: NodeType) {
-  return wrappingInputRule(
-    /^(\d+)\.\s$/,
-    nodeType,
-    (match) => ({ order: +match[1] }),
-    (match, node) => node.childCount + node.attrs.order === +match[1],
-  );
-}
-
-function bulletListRule(nodeType: NodeType) {
-  return wrappingInputRule(/^\s*([-+*])\s$/, nodeType);
-}
-
-function codeBlockRule(nodeType: NodeType) {
-  return textblockTypeInputRule(/^```$/, nodeType);
-}
-
-export function buildInputRules(schema: Schema) {
-  const rules = [...smartQuotes, ellipsis, emDash];
-  if (schema.nodes.blockquote) rules.push(blockQuoteRule(schema.nodes.blockquote));
-  if (schema.nodes.ordered_list) rules.push(orderedListRule(schema.nodes.ordered_list));
-  if (schema.nodes.bullet_list) rules.push(bulletListRule(schema.nodes.bullet_list));
-  if (schema.nodes.code_block) rules.push(codeBlockRule(schema.nodes.code_block));
-  if (schema.nodes.heading) rules.push(headingRule(schema.nodes.heading, 6));
-  return inputRules({ rules });
+// Inline mark conversions live in the live-format plugin.
+// Block-level conversions live in blockEnter.ts (Adım 3).
+// This file only contains SmartyPants-style substitutions safe to fire
+// mid-typing (Adım 6): smartQuotes, ellipsis, and our own dash/symbol rules.
+export function buildInputRules(_schema: Schema) {
+  return inputRules({
+    rules: [...smartQuotes, ellipsis, ...smartyPantsRules],
+  });
 }

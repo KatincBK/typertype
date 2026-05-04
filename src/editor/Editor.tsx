@@ -9,6 +9,7 @@ import { docToMarkdown, markdownToDoc } from "./serializer";
 import { buildKeymap } from "./keymap";
 import { buildInputRules } from "./inputRules";
 import { buildLiveFormatPlugin } from "./liveFormat";
+import { buildAutoPairPlugin } from "./autoPair";
 import { logger } from "@/lib/logger";
 
 import "prosemirror-view/style/prosemirror.css";
@@ -31,6 +32,7 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
       plugins: [
         buildInputRules(schema),
         buildLiveFormatPlugin(schema),
+        buildAutoPairPlugin(),
         buildKeymap(schema),
         keymap(baseKeymap),
         history(),

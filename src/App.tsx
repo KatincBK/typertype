@@ -35,9 +35,11 @@ import { useTheme, type ThemePreference } from "@/lib/themes";
 import { applyUserCss, loadUserCss } from "@/lib/userCss";
 import { buildHtmlDocument, type HtmlExportMode } from "@/lib/exportHtml";
 import { checkPandoc, exportViaPandoc } from "@/lib/exportPandoc";
+import { useSettings } from "@/lib/settings";
 import { Sidebar } from "@/components/Sidebar";
 import { FindBar } from "@/components/FindBar";
 import { ExportMenu, type ExportFormat } from "@/components/ExportMenu";
+import { SettingsDialog } from "@/components/SettingsDialog";
 import "./App.css";
 
 const SAMPLE_MARKDOWN = `# Tylike
@@ -167,6 +169,11 @@ function App() {
   useEffect(() => {
     void loadUserCss().then(applyUserCss);
   }, []);
+
+  // MVP-8 — settings (live-updates CSS vars + drives the auto-save / recovery
+  // delays below)
+  const settingsApi = useSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const editorRef = useRef<EditorHandle>(null);
 
@@ -388,11 +395,11 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // MVP-5 — auto-save: when the doc is dirty AND has a path on disk, write
-  // the latest content after 2 seconds of typing inactivity. Re-running
-  // the effect on every keystroke + cleanup-resets-the-timer gives us
-  // the debounce for free.
-  const AUTO_SAVE_MS = 2000;
+  // MVP-5/8 — auto-save: when the doc is dirty AND has a path on disk,
+  // write the latest content after the configured delay (default 2 s) of
+  // typing inactivity. Re-running the effect on every keystroke +
+  // cleanup-resets-the-timer gives us the debounce for free.
+  const autoSaveMs = settingsApi.settings.files.autoSaveMs;
   useEffect(() => {
     if (!recoveryHandled) return;
     if (!filePath || !dirty) return;
@@ -402,15 +409,15 @@ function App() {
         setSavedMd(currentMd);
         recordRecent(filePath);
       }
-    }, AUTO_SAVE_MS);
+    }, autoSaveMs);
     return () => clearTimeout(timer);
-  }, [recoveryHandled, filePath, currentMd, dirty, recordRecent]);
+  }, [recoveryHandled, filePath, currentMd, dirty, recordRecent, autoSaveMs]);
 
-  // MVP-5 — recovery snapshot: every 3 seconds of inactivity while dirty,
+  // MVP-5/8 — recovery snapshot: every N seconds of inactivity while dirty,
   // write the snapshot. When the doc goes clean (saved or matches disk),
   // delete the snapshot so the next launch doesn't offer to "recover"
   // already-saved work.
-  const RECOVERY_MS = 3000;
+  const recoveryMs = settingsApi.settings.files.recoveryMs;
   useEffect(() => {
     if (!recoveryHandled) return;
     if (!dirty) {
@@ -419,9 +426,9 @@ function App() {
     }
     const timer = setTimeout(() => {
       void writeRecovery(filePath, currentMd);
-    }, RECOVERY_MS);
+    }, recoveryMs);
     return () => clearTimeout(timer);
-  }, [recoveryHandled, dirty, filePath, currentMd]);
+  }, [recoveryHandled, dirty, filePath, currentMd, recoveryMs]);
 
   // MVP-5 — window blur handler. Save / snapshot immediately (no debounce)
   // so a crash or accidental close after the user tabs away still keeps
@@ -444,6 +451,8 @@ function App() {
     return () => window.removeEventListener("blur", onBlur);
   }, []);
 
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+
   const handlersRef = useRef({
     handleSave,
     handleSaveAs,
@@ -452,6 +461,7 @@ function App() {
     toggleSidebar,
     openFind,
     closeFind,
+    openSettings,
     findNext: () => editorRef.current?.findNext(),
     findPrev: () => editorRef.current?.findPrev(),
     findOpen,
@@ -464,6 +474,7 @@ function App() {
     toggleSidebar,
     openFind,
     closeFind,
+    openSettings,
     findNext: () => editorRef.current?.findNext(),
     findPrev: () => editorRef.current?.findPrev(),
     findOpen,
@@ -513,6 +524,10 @@ function App() {
       } else if (key === "h" && !e.shiftKey) {
         e.preventDefault();
         h.openFind("replace");
+      } else if (e.key === ",") {
+        // Ctrl+, opens Settings (Typora / VS Code convention).
+        e.preventDefault();
+        h.openSettings();
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -589,6 +604,11 @@ function App() {
           />
         </main>
       </div>
+      <SettingsDialog
+        open={settingsOpen}
+        api={settingsApi}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }

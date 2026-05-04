@@ -137,6 +137,192 @@ body,
   background: var(--bg-hover);
 }
 
+/* MVP-8 — settings dialog */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.settings-dialog {
+  background: var(--bg-modal);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 640px;
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.settings-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0 8px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.settings-close:hover {
+  background: var(--bg-hover);
+}
+
+.settings-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 0.5rem;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.settings-tab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 8px 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.settings-tab.is-active {
+  color: var(--fg);
+  border-bottom-color: var(--accent);
+}
+
+.settings-tab:hover:not(.is-active) {
+  color: var(--fg);
+}
+
+.settings-body {
+  padding: 1rem 1.25rem;
+  overflow: auto;
+  flex: 1;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 0.9rem;
+}
+
+.settings-field-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.settings-field input[type="text"],
+.settings-field select {
+  appearance: none;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.settings-field input[type="range"] {
+  accent-color: var(--accent);
+}
+
+.settings-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 0.9rem;
+}
+
+.settings-advanced .settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 0.9rem;
+}
+
+.settings-path {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--bg-subtle);
+  padding: 4px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.settings-btn-primary,
+.settings-btn-secondary {
+  appearance: none;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 5px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.settings-btn-primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: white;
+}
+
+.settings-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.settings-btn-secondary {
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--border);
+}
+
+.settings-btn-secondary:hover {
+  background: var(--bg-hover);
+}
+
 /* MVP-7 — export menu */
 
 .export-menu {
@@ -545,7 +731,7 @@ body,
   flex: 1;
   overflow: auto;
   padding: 2rem 4rem;
-  max-width: 860px;
+  max-width: var(--editor-width, 860px);
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -554,8 +740,16 @@ body,
 .editor .ProseMirror {
   outline: none;
   min-height: 100%;
-  line-height: 1.7;
-  font-size: 16px;
+  font-family: var(
+    --editor-font-family,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif
+  );
+  font-size: var(--editor-font-size, 16px);
+  line-height: var(--editor-line-height, 1.7);
 }
 
 .editor .ProseMirror h1 { font-size: 2em; margin: 1em 0 0.5em; font-weight: 700; }

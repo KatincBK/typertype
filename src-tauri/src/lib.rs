@@ -27,6 +27,65 @@ fn user_config_path(app: &tauri::AppHandle) -> Result<PathBuf, tauri::Error> {
     Ok(dir.join("conf").join("conf.user.json"))
 }
 
+// MVP-8 — expose well-known config paths to the frontend so the Settings
+// dialog can offer "open this in your editor / file manager" buttons. We
+// also create the parent dirs and a stub file on demand so the user
+// doesn't end up with "file not found" when clicking Open.
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ConfigPaths {
+    config_dir: String,
+    user_config_file: String,
+    themes_dir: String,
+    themes_custom_css: String,
+}
+
+#[tauri::command]
+fn get_config_paths(app: tauri::AppHandle) -> Result<ConfigPaths, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    let conf_file = dir.join("conf").join("conf.user.json");
+    let themes_dir = dir.join("themes");
+    let custom_css = themes_dir.join("custom.css");
+    Ok(ConfigPaths {
+        config_dir: dir.to_string_lossy().to_string(),
+        user_config_file: conf_file.to_string_lossy().to_string(),
+        themes_dir: themes_dir.to_string_lossy().to_string(),
+        themes_custom_css: custom_css.to_string_lossy().to_string(),
+    })
+}
+
+#[tauri::command]
+fn ensure_user_config_exists(app: tauri::AppHandle) -> Result<String, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    let conf_dir = dir.join("conf");
+    std::fs::create_dir_all(&conf_dir)
+        .map_err(|e| format!("create {}: {}", conf_dir.display(), e))?;
+    let path = conf_dir.join("conf.user.json");
+    if !path.exists() {
+        std::fs::write(&path, "{\n  \"keymap\": {}\n}\n")
+            .map_err(|e| format!("write {}: {}", path.display(), e))?;
+    }
+    Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn ensure_themes_dir_exists(app: tauri::AppHandle) -> Result<String, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    let themes_dir = dir.join("themes");
+    std::fs::create_dir_all(&themes_dir)
+        .map_err(|e| format!("create {}: {}", themes_dir.display(), e))?;
+    let custom_css = themes_dir.join("custom.css");
+    if !custom_css.exists() {
+        std::fs::write(
+            &custom_css,
+            "/* Tylike kullanıcı stilleri. Buraya yazdığınız CSS,\n   uygulama yeniden başlatıldığında uygulanır. */\n",
+        )
+        .map_err(|e| format!("write {}: {}", custom_css.display(), e))?;
+    }
+    Ok(themes_dir.to_string_lossy().to_string())
+}
+
 // MVP-7 — Pandoc-driven export. We pipe the markdown source over stdin
 // instead of writing a temp file, and capture stderr so the frontend can
 // surface Pandoc's actual error message (missing LaTeX engine for PDF,
@@ -319,6 +378,9 @@ pub fn run() {
             clear_recovery,
             check_pandoc,
             pandoc_export,
+            get_config_paths,
+            ensure_user_config_exists,
+            ensure_themes_dir_exists,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

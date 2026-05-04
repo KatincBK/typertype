@@ -9,6 +9,7 @@ import markdownitSub from "markdown-it-sub";
 import markdownitSup from "markdown-it-sup";
 import { full as markdownitEmoji } from "markdown-it-emoji";
 import markdownitFootnote from "markdown-it-footnote";
+import katex from "katex";
 import type { Node } from "prosemirror-model";
 import { schema } from "./schema";
 import { mathMarkdownItPlugin } from "./math";
@@ -30,6 +31,60 @@ const md = MarkdownIt({ html: true })
   .use(markdownitFootnote)
   .use(mathMarkdownItPlugin)
   .use(tocMarkdownItPlugin);
+
+// MVP-7 — render rules for HTML export. The editor side uses md.parse()
+// and feeds tokens into prosemirror-markdown, so adding renderer.rules is
+// safe (it only affects md.render() callers — i.e. the export path).
+md.renderer.rules.math_inline = (tokens, idx) => {
+  const tex = tokens[idx].content;
+  try {
+    return katex.renderToString(tex, {
+      throwOnError: false,
+      displayMode: false,
+    });
+  } catch {
+    return `<span class="math-inline">$${escapeHtml(tex)}$</span>`;
+  }
+};
+
+md.renderer.rules.math_block = (tokens, idx) => {
+  const tex = tokens[idx].content;
+  try {
+    return `<div class="math-block">${katex.renderToString(tex, {
+      throwOnError: false,
+      displayMode: true,
+    })}</div>`;
+  } catch {
+    return `<div class="math-block">$$${escapeHtml(tex)}$$</div>`;
+  }
+};
+
+md.renderer.rules.toc = () =>
+  `<div class="toc"><em>İçindekiler (export'te işlenmez)</em></div>`;
+
+// Override the default fence renderer so ```mermaid blocks become a
+// <div class="mermaid"> the bundled mermaid.js can pick up on page load.
+const defaultFenceRule = md.renderer.rules.fence;
+md.renderer.rules.fence = (tokens, idx, options, env, slf) => {
+  const token = tokens[idx];
+  if (token.info.trim() === "mermaid") {
+    return `<div class="mermaid">${escapeHtml(token.content)}</div>\n`;
+  }
+  return defaultFenceRule
+    ? defaultFenceRule(tokens, idx, options, env, slf)
+    : slf.renderToken(tokens, idx, options);
+};
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// Re-exported so the export module can call md.render(markdown) without
+// having to rebuild the full plugin chain.
+export const markdownItInstance = md;
 
 const parser = new MarkdownParser(schema, md, {
   blockquote: { block: "blockquote" },

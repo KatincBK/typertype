@@ -1,4 +1,6 @@
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use tauri::Manager;
 use tracing_subscriber::EnvFilter;
 
@@ -23,6 +25,79 @@ fn read_user_config(app: tauri::AppHandle) -> Result<String, String> {
 fn user_config_path(app: &tauri::AppHandle) -> Result<PathBuf, tauri::Error> {
     let dir = app.path().app_config_dir()?;
     Ok(dir.join("conf").join("conf.user.json"))
+}
+
+// MVP-7 — Pandoc-driven export. We pipe the markdown source over stdin
+// instead of writing a temp file, and capture stderr so the frontend can
+// surface Pandoc's actual error message (missing LaTeX engine for PDF,
+// unknown format, etc.) rather than a generic "exit code N".
+
+#[tauri::command]
+fn check_pandoc() -> Result<String, String> {
+    let output = Command::new("pandoc").arg("--version").output();
+    match output {
+        Ok(o) if o.status.success() => {
+            let stdout = String::from_utf8_lossy(&o.stdout);
+            let first_line = stdout.lines().next().unwrap_or("Pandoc");
+            Ok(first_line.to_string())
+        }
+        Ok(o) => {
+            let err = String::from_utf8_lossy(&o.stderr);
+            Err(format!("pandoc --version failed: {}", err))
+        }
+        Err(_) => Err(
+            "Pandoc bulunamadı. https://pandoc.org/installing.html adresinden kurun ve PATH'e ekleyin."
+                .to_string(),
+        ),
+    }
+}
+
+#[tauri::command]
+fn pandoc_export(
+    markdown: String,
+    output_path: String,
+    output_format: String,
+) -> Result<(), String> {
+    let mut child = Command::new("pandoc")
+        .args([
+            "-f",
+            "markdown+tex_math_dollars+pipe_tables+task_lists+footnotes+raw_html",
+            "-t",
+            &output_format,
+            "-o",
+            &output_path,
+            "--standalone",
+        ])
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| {
+            format!(
+                "Pandoc başlatılamadı (PATH'te değil mi?): {}",
+                e
+            )
+        })?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(markdown.as_bytes())
+            .map_err(|e| format!("Pandoc stdin: {}", e))?;
+        // Closing stdin signals EOF to pandoc.
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|e| format!("Pandoc bekleme: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!(
+            "Pandoc çıkış {}: {}",
+            output.status, stderr.trim()
+        ));
+    }
+    Ok(())
 }
 
 // MVP-6 — load the user's optional custom CSS from
@@ -242,6 +317,8 @@ pub fn run() {
             write_recovery,
             read_recovery,
             clear_recovery,
+            check_pandoc,
+            pandoc_export,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

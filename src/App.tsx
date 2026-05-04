@@ -33,8 +33,11 @@ import {
 } from "@/lib/recovery";
 import { useTheme, type ThemePreference } from "@/lib/themes";
 import { applyUserCss, loadUserCss } from "@/lib/userCss";
+import { buildHtmlDocument, type HtmlExportMode } from "@/lib/exportHtml";
+import { checkPandoc, exportViaPandoc } from "@/lib/exportPandoc";
 import { Sidebar } from "@/components/Sidebar";
 import { FindBar } from "@/components/FindBar";
+import { ExportMenu, type ExportFormat } from "@/components/ExportMenu";
 import "./App.css";
 
 const SAMPLE_MARKDOWN = `# Tylike
@@ -278,6 +281,56 @@ function App() {
     setSidebarOpen((v) => !v);
   }, []);
 
+  // MVP-7 — export handler. HTML modes go through pure-frontend code; the
+  // rest are handed to Pandoc via the Rust command, with a pre-flight
+  // check so we can show a useful message if pandoc isn't installed.
+  const handleExport = useCallback(
+    async (format: ExportFormat) => {
+      const baseName = filePath
+        ? basename(filePath).replace(/\.(md|markdown|txt)$/i, "")
+        : UNTITLED_LABEL;
+
+      const isHtml = format === "html-styled" || format === "html-plain";
+      if (isHtml) {
+        const mode: HtmlExportMode =
+          format === "html-styled" ? "styled" : "plain";
+        const target = await pickSavePath(`${baseName}.html`);
+        if (!target) return;
+        const doc = buildHtmlDocument(currentMd, mode, baseName);
+        const ok = await safeSaveFile(target, doc);
+        if (ok) window.alert(`HTML dışa aktarıldı: ${target}`);
+        return;
+      }
+
+      const check = await checkPandoc();
+      if (!check.available) {
+        window.alert(check.error ?? "Pandoc bulunamadı.");
+        return;
+      }
+
+      const formatMap: Record<ExportFormat, { ext: string; pandoc: string }> = {
+        "html-styled": { ext: "html", pandoc: "html5" },
+        "html-plain": { ext: "html", pandoc: "html5" },
+        docx: { ext: "docx", pandoc: "docx" },
+        pdf: { ext: "pdf", pandoc: "pdf" },
+        latex: { ext: "tex", pandoc: "latex" },
+        epub: { ext: "epub", pandoc: "epub" },
+        odt: { ext: "odt", pandoc: "odt" },
+        rtf: { ext: "rtf", pandoc: "rtf" },
+      };
+      const { ext, pandoc } = formatMap[format];
+      const target = await pickSavePath(`${baseName}.${ext}`);
+      if (!target) return;
+      const result = await exportViaPandoc(currentMd, target, pandoc);
+      if (result.ok) {
+        window.alert(`${format.toUpperCase()} dışa aktarıldı: ${target}`);
+      } else {
+        window.alert("Dışa aktarma hatası:\n" + (result.error ?? ""));
+      }
+    },
+    [filePath, currentMd],
+  );
+
   // MVP-4 — find/replace handlers
   const openFind = useCallback((mode: "find" | "replace") => {
     setFindMode(mode);
@@ -478,6 +531,7 @@ function App() {
           {dirty ? <span className="app-dirty"> ●</span> : null}
         </span>
         <span className="app-stats">{currentMd.length} karakter</span>
+        <ExportMenu onExport={handleExport} />
         <select
           className="app-theme-select"
           value={theme.preference}

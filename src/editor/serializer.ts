@@ -98,7 +98,11 @@ const parser = new MarkdownParser(schema, md, {
       id: tok.meta?.label ?? tok.meta?.id?.toString() ?? "",
     }),
   },
-  footnote_anchor: { ignore: true },
+  // footnote_anchor is a single inline token (the ↩ back-link), so we
+  // need noCloseToken: true alongside ignore — without it, the parser
+  // would try to register footnote_anchor_open / _close handlers and
+  // bail at runtime when it sees the bare token.
+  footnote_anchor: { ignore: true, noCloseToken: true },
   footnote_block: { ignore: true },
   // GFM table support
   table: { block: "table" },

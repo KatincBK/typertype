@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::Manager;
 use tracing_subscriber::EnvFilter;
 
@@ -62,6 +62,91 @@ fn write_text_file(path: String, content: String) -> Result<(), String> {
     std::fs::write(&path, content).map_err(|e| format!("write {}: {}", path, e))
 }
 
+// MVP-3 — folder picker + recursive directory listing for the sidebar tree.
+// Only markdown / text files are surfaced; hidden entries (`.git`, dotfiles)
+// are skipped. Directories come before files, then alphabetically.
+
+#[derive(serde::Serialize)]
+struct FileEntry {
+    name: String,
+    path: String,
+    is_dir: bool,
+    children: Option<Vec<FileEntry>>,
+}
+
+#[tauri::command]
+async fn pick_folder_dialog() -> Option<String> {
+    rfd::AsyncFileDialog::new()
+        .pick_folder()
+        .await
+        .map(|f| f.path().to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn read_dir_tree(path: String) -> Result<FileEntry, String> {
+    let p = PathBuf::from(&path);
+    read_entry(&p).map_err(|e| format!("read {}: {}", path, e))
+}
+
+fn read_entry(path: &Path) -> std::io::Result<FileEntry> {
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.to_string_lossy().to_string());
+    let metadata = path.metadata()?;
+
+    if metadata.is_dir() {
+        let mut children = Vec::new();
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            let entry_name = entry.file_name().to_string_lossy().to_string();
+            if entry_name.starts_with('.') {
+                continue;
+            }
+            let entry_path = entry.path();
+            let entry_meta = match entry.metadata() {
+                Ok(m) => m,
+                Err(_) => continue, // skip unreadable entries instead of failing the whole tree
+            };
+            if !entry_meta.is_dir() {
+                let ext = entry_path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|s| s.to_lowercase());
+                let supported = matches!(
+                    ext.as_deref(),
+                    Some("md") | Some("markdown") | Some("txt")
+                );
+                if !supported {
+                    continue;
+                }
+            }
+            match read_entry(&entry_path) {
+                Ok(child) => children.push(child),
+                Err(_) => continue,
+            }
+        }
+        children.sort_by(|a, b| match (a.is_dir, b.is_dir) {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
+        });
+        Ok(FileEntry {
+            name,
+            path: path.to_string_lossy().to_string(),
+            is_dir: true,
+            children: Some(children),
+        })
+    } else {
+        Ok(FileEntry {
+            name,
+            path: path.to_string_lossy().to_string(),
+            is_dir: false,
+            children: None,
+        })
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tracing_subscriber::fmt()
@@ -82,6 +167,8 @@ pub fn run() {
             save_file_dialog,
             read_text_file,
             write_text_file,
+            pick_folder_dialog,
+            read_dir_tree,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

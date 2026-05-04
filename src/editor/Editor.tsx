@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { EditorState } from "prosemirror-state";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { history } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
@@ -33,8 +39,23 @@ interface EditorProps {
   onChange?: (markdown: string) => void;
 }
 
-export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
+// Imperative handle exposed to App so the outline panel can scroll the
+// editor to a clicked heading. The Editor itself stays uncontrolled.
+//
+// Jump-by-index instead of jump-by-text because heading textContent in the
+// doc strips inline marks and atom nodes (emoji, math_inline) — which
+// extractHeadings on the raw markdown sees verbatim. Matching positionally
+// avoids the comparison mismatch entirely.
+export interface EditorHandle {
+  scrollToHeadingByIndex: (index: number) => void;
+}
+
+export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
+  { initialMarkdown = "", onChange },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -52,6 +73,35 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
       cancelled = true;
     };
   }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      scrollToHeadingByIndex(index) {
+        const view = viewRef.current;
+        if (!view) return;
+        let count = 0;
+        let target: number | null = null;
+        view.state.doc.descendants((node, pos) => {
+          if (target !== null) return false;
+          if (node.type.name === "heading") {
+            if (count === index) {
+              target = pos;
+              return false;
+            }
+            count++;
+          }
+        });
+        if (target === null) return;
+        const tr = view.state.tr.setSelection(
+          TextSelection.create(view.state.doc, target + 1),
+        );
+        view.dispatch(tr.scrollIntoView());
+        view.focus();
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (!containerRef.current || overrides === null) return;
@@ -94,14 +144,16 @@ export function Editor({ initialMarkdown = "", onChange }: EditorProps) {
         }
       },
     });
+    viewRef.current = view;
 
     logger.info("Editor mounted with", state.plugins.length, "plugins");
 
     return () => {
       view.destroy();
+      viewRef.current = null;
       logger.info("Editor destroyed");
     };
   }, [initialMarkdown, overrides]);
 
   return <div ref={containerRef} className="editor" />;
-}
+});

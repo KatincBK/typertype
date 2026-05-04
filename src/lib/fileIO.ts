@@ -62,6 +62,16 @@ export async function safeSaveFile(
   }
 }
 
+export async function safeReadFile(path: string): Promise<string | null> {
+  try {
+    return await invoke<string>("read_text_file", { path });
+  } catch (err) {
+    logger.error("readFile failed", err);
+    window.alert("Dosya okunamadı: " + describe(err));
+    return null;
+  }
+}
+
 function describe(err: unknown): string {
   if (typeof err === "string") return err;
   if (err instanceof Error) return err.message;

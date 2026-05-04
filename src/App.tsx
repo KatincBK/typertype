@@ -1,11 +1,25 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Editor } from "@/editor";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Editor, type EditorHandle } from "@/editor";
 import {
   basename,
   pickSavePath,
   safeOpenFile,
+  safeReadFile,
   safeSaveFile,
 } from "@/lib/fileIO";
+import {
+  pickFolder,
+  safeReadDirTree,
+  type FileEntry,
+} from "@/lib/folderIO";
+import { extractHeadings } from "@/lib/headings";
+import { Sidebar } from "@/components/Sidebar";
 import "./App.css";
 
 const SAMPLE_MARKDOWN = `# Tylike
@@ -87,6 +101,7 @@ Bu cümlede bir dipnot[^1] var, ardından bir tane daha[^typora].
 - Math block \`Ctrl+Shift+M\`, code fence \`Ctrl+Shift+K\`, table \`Ctrl+T\`
 - Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+]\`, numbered: \`Ctrl+Shift+[\`
 - Dosya: \`Ctrl+N\` (yeni), \`Ctrl+O\` (aç), \`Ctrl+S\` (kaydet), \`Ctrl+Shift+S\` (farklı kaydet)
+- Sidebar: \`Ctrl+Shift+L\`
 - Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;
 
@@ -95,25 +110,36 @@ const DIRTY_CONFIRM =
   "Kaydedilmemiş değişiklikler kaybolacak. Devam etmek istiyor musunuz?";
 
 function App() {
-  // Three snapshots:
-  //   loadedMd  — what the editor was last initialized with. Drives the
-  //               <Editor> remount so it ONLY changes on new / open.
-  //   savedMd   — what's currently on disk. Drives the dirty indicator
-  //               (savedMd === currentMd ⇒ clean). Save updates this in
-  //               place WITHOUT remounting the editor and losing caret.
-  //   currentMd — live editor content, fed by Editor.onChange.
+  // Three markdown snapshots — see the MVP-2 commit message for why these
+  // are separate. loadedMd drives the <Editor> remount.
   const [filePath, setFilePath] = useState<string | null>(null);
   const [loadedMd, setLoadedMd] = useState(SAMPLE_MARKDOWN);
   const [savedMd, setSavedMd] = useState(SAMPLE_MARKDOWN);
   const [currentMd, setCurrentMd] = useState(SAMPLE_MARKDOWN);
 
+  // MVP-3 — sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [rootPath, setRootPath] = useState<string | null>(null);
+  const [tree, setTree] = useState<FileEntry | null>(null);
+
+  const editorRef = useRef<EditorHandle>(null);
+
   const dirty = currentMd !== savedMd;
   const fileLabel = filePath ? basename(filePath) : UNTITLED_LABEL;
+
+  const headings = useMemo(() => extractHeadings(currentMd), [currentMd]);
 
   const confirmDiscardDirty = useCallback(() => {
     if (!dirty) return true;
     return window.confirm(DIRTY_CONFIRM);
   }, [dirty]);
+
+  const loadFile = useCallback((path: string, content: string) => {
+    setLoadedMd(content);
+    setSavedMd(content);
+    setCurrentMd(content);
+    setFilePath(path);
+  }, []);
 
   const handleNew = useCallback(() => {
     if (!confirmDiscardDirty()) return;
@@ -127,11 +153,8 @@ function App() {
     if (!confirmDiscardDirty()) return;
     const opened = await safeOpenFile();
     if (!opened) return;
-    setLoadedMd(opened.content);
-    setSavedMd(opened.content);
-    setCurrentMd(opened.content);
-    setFilePath(opened.path);
-  }, [confirmDiscardDirty]);
+    loadFile(opened.path, opened.content);
+  }, [confirmDiscardDirty, loadFile]);
 
   const handleSave = useCallback(async () => {
     let target = filePath;
@@ -142,7 +165,7 @@ function App() {
     const ok = await safeSaveFile(target, currentMd);
     if (!ok) return;
     setFilePath(target);
-    setSavedMd(currentMd); // loadedMd intentionally unchanged → no remount
+    setSavedMd(currentMd);
   }, [filePath, currentMd]);
 
   const handleSaveAs = useCallback(async () => {
@@ -156,17 +179,49 @@ function App() {
     setSavedMd(currentMd);
   }, [fileLabel, currentMd]);
 
-  // Window-level shortcuts. Bound on document because the editor lives in
-  // its own focus subtree and ProseMirror's keymap doesn't see Ctrl+S unless
-  // it's explicitly bound there. We preventDefault so the browser's "save
-  // page" dialog never appears.
-  //
-  // The handlers close over currentMd / filePath / dirty, all of which
-  // update on every keystroke. We funnel them through a ref so the
-  // window-level listener is only attached once instead of being detached
-  // and re-attached after every character the user types.
-  const handlersRef = useRef({ handleSave, handleSaveAs, handleOpen, handleNew });
-  handlersRef.current = { handleSave, handleSaveAs, handleOpen, handleNew };
+  // MVP-3 — sidebar handlers
+  const handlePickFolder = useCallback(async () => {
+    const path = await pickFolder();
+    if (!path) return;
+    const t = await safeReadDirTree(path);
+    if (!t) return;
+    setRootPath(path);
+    setTree(t);
+  }, []);
+
+  const handleFileFromTree = useCallback(
+    async (path: string) => {
+      if (path === filePath) return; // already open, no-op
+      if (!confirmDiscardDirty()) return;
+      const content = await safeReadFile(path);
+      if (content === null) return;
+      loadFile(path, content);
+    },
+    [filePath, confirmDiscardDirty, loadFile],
+  );
+
+  const handleJumpHeading = useCallback((index: number) => {
+    editorRef.current?.scrollToHeadingByIndex(index);
+  }, []);
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((v) => !v);
+  }, []);
+
+  const handlersRef = useRef({
+    handleSave,
+    handleSaveAs,
+    handleOpen,
+    handleNew,
+    toggleSidebar,
+  });
+  handlersRef.current = {
+    handleSave,
+    handleSaveAs,
+    handleOpen,
+    handleNew,
+    toggleSidebar,
+  };
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const mod = e.ctrlKey || e.metaKey;
@@ -185,6 +240,9 @@ function App() {
       } else if (key === "n" && !e.shiftKey) {
         e.preventDefault();
         h.handleNew();
+      } else if (key === "l" && e.shiftKey) {
+        e.preventDefault();
+        h.toggleSidebar();
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -192,7 +250,7 @@ function App() {
   }, []);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${sidebarOpen ? " has-sidebar" : ""}`}>
       <header className="app-header">
         <h1 className="app-title">Tylike</h1>
         <span className="app-file" title={filePath ?? UNTITLED_LABEL}>
@@ -201,9 +259,26 @@ function App() {
         </span>
         <span className="app-stats">{currentMd.length} karakter</span>
       </header>
-      <main className="app-main">
-        <Editor initialMarkdown={loadedMd} onChange={setCurrentMd} />
-      </main>
+      <div className="app-body">
+        {sidebarOpen ? (
+          <Sidebar
+            rootPath={rootPath}
+            tree={tree}
+            activeFilePath={filePath}
+            headings={headings}
+            onPickFolder={handlePickFolder}
+            onFileClick={handleFileFromTree}
+            onJumpHeading={handleJumpHeading}
+          />
+        ) : null}
+        <main className="app-main">
+          <Editor
+            ref={editorRef}
+            initialMarkdown={loadedMd}
+            onChange={setCurrentMd}
+          />
+        </main>
+      </div>
     </div>
   );
 }

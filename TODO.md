@@ -205,11 +205,11 @@ Editör Typora seviyesine gelince bu sırayla devam:
 
 ## FAZ 11 — Görsel Yönetimi
 
-- [ ] Insert image (dialog, drag-drop, paste)
-- [ ] Image rendering (markdown'da gizli)
+- [x] Insert image (dialog Ctrl+Shift+I, drag-drop, paste)
+- [x] Image rendering (convertFileSrc + relative path resolver)
 - [ ] Image resize (drag handle)
 - [ ] Image alignment
-- [ ] Image policy: absolute / relative / copy to assets / move / upload
+- [x] Image policy: filePath varsa `<doc>.assets/` relative, yoksa app_data_dir absolute
 - [ ] Custom upload script (CLI çağrısı, stdout=URL)
 - [ ] Image preview (zoom modal)
 - [ ] Broken image placeholder

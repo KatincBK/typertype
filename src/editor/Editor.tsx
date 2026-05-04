@@ -34,6 +34,13 @@ import {
   type FindOptions,
   type FindStatus,
 } from "./find";
+import { buildImageNodeView } from "./imageView";
+import {
+  buildImagePastePlugin,
+  insertImageFromDialog,
+  insertImageFromPath,
+} from "./imageHandlers";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { logger } from "@/lib/logger";
 
 import "prosemirror-view/style/prosemirror.css";
@@ -47,6 +54,9 @@ export interface FindReportStatus {
 
 interface EditorProps {
   initialMarkdown?: string;
+  /** Path of the doc currently in the editor — used for resolving
+   *  relative image paths and for the assets-folder location. */
+  currentFilePath?: string | null;
   onChange?: (markdown: string) => void;
   onFindChange?: (status: FindReportStatus) => void;
 }
@@ -61,10 +71,11 @@ export interface EditorHandle {
   findClose: () => void;
   replaceCurrent: (replacement: string) => void;
   replaceAll: (replacement: string) => void;
+  insertImageFromDialog: () => void;
 }
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
-  { initialMarkdown = "", onChange, onFindChange },
+  { initialMarkdown = "", currentFilePath = null, onChange, onFindChange },
   ref,
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,6 +84,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
   onChangeRef.current = onChange;
   const onFindChangeRef = useRef(onFindChange);
   onFindChangeRef.current = onFindChange;
+  const filePathRef = useRef<string | null>(currentFilePath);
+  filePathRef.current = currentFilePath;
+  const getDocPath = () => filePathRef.current;
 
   // Adım 13 — load user keymap overrides on mount. Editor mounts only after
   // the config has been loaded (or failed gracefully) so the keymap is
@@ -205,6 +219,11 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         }
         view.dispatch(tr);
       },
+      insertImageFromDialog() {
+        const view = viewRef.current;
+        if (!view) return;
+        void insertImageFromDialog(view, getDocPath);
+      },
     }),
     [],
   );
@@ -227,6 +246,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         buildFocusBlockPlugin(),
         buildTableToolbarPlugin(),
         ...buildTablePlugins(),
+        buildImagePastePlugin(schema, getDocPath),
         buildFindPlugin(),
         buildKeymap(schema, overrides),
         keymap(baseKeymap),
@@ -242,6 +262,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         ...buildEmojiNodeView(),
         ...buildTocNodeView(),
         ...buildFootnoteNodeView(),
+        ...buildImageNodeView(getDocPath),
         code_block: (node) => new CodeBlockView(node),
       },
       dispatchTransaction(tr) {
@@ -276,6 +297,46 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       logger.info("Editor destroyed");
     };
   }, [initialMarkdown, overrides]);
+
+  // FAZ 11 — Tauri's drag-drop event gives us the absolute paths the OS
+  // dropped onto the window, plus the cursor position in physical
+  // pixels. We resolve that to a doc position via posAtCoords and copy
+  // any image files into the doc's assets folder. Bound once with the
+  // viewRef + filePathRef pattern so the listener doesn't have to
+  // re-bind on every keystroke.
+  useEffect(() => {
+    let unlisten: UnlistenFn | undefined;
+    let cancelled = false;
+    void listen<{ paths: string[]; position: { x: number; y: number } }>(
+      "tauri://drag-drop",
+      async (e) => {
+        const view = viewRef.current;
+        if (!view) return;
+        const { paths, position } = e.payload;
+        if (!paths || paths.length === 0) return;
+        const dpr = window.devicePixelRatio || 1;
+        const coords = {
+          left: position.x / dpr,
+          top: position.y / dpr,
+        };
+        const hit = view.posAtCoords(coords);
+        if (!hit) return;
+        for (const path of paths) {
+          await insertImageFromPath(view, path, hit.pos, getDocPath);
+        }
+      },
+    ).then((fn) => {
+      if (cancelled) {
+        fn();
+      } else {
+        unlisten = fn;
+      }
+    });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
 
   return <div ref={containerRef} className="editor" />;
 });

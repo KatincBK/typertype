@@ -103,6 +103,148 @@ fn ensure_themes_dir_exists(app: tauri::AppHandle) -> Result<String, String> {
     Ok(themes_dir.to_string_lossy().to_string())
 }
 
+// FAZ 11 — Image insertion. Three commands cover the three sources:
+//   pick_image_dialog: native picker for "Insert image…"
+//   copy_image_to_assets: existing on-disk image (drag-drop, picker)
+//   write_image_bytes: clipboard paste of a binary blob
+// All three return the path that should go into the markdown source —
+// relative to the doc when it's saved to disk, absolute under the app
+// data dir when the doc is still untitled.
+
+#[tauri::command]
+async fn pick_image_dialog() -> Option<String> {
+    rfd::AsyncFileDialog::new()
+        .add_filter("Image", &["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp"])
+        .pick_file()
+        .await
+        .map(|f| f.path().to_string_lossy().to_string())
+}
+
+fn unique_dest(dir: &Path, file_name: &str) -> PathBuf {
+    let candidate = dir.join(file_name);
+    if !candidate.exists() {
+        return candidate;
+    }
+    let stem = Path::new(file_name)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("image");
+    let ext = Path::new(file_name)
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis().to_string())
+        .unwrap_or_else(|_| "0".to_string());
+    let new_name = if ext.is_empty() {
+        format!("{stem}-{ts}")
+    } else {
+        format!("{stem}-{ts}.{ext}")
+    };
+    dir.join(new_name)
+}
+
+fn doc_assets_dir(doc_path: &Path) -> Result<(PathBuf, String), String> {
+    let parent = doc_path
+        .parent()
+        .ok_or_else(|| "Belge yolunun üst klasörü yok".to_string())?;
+    let stem = doc_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("untitled")
+        .to_string();
+    let dir_name = format!("{stem}.assets");
+    Ok((parent.join(&dir_name), dir_name))
+}
+
+fn untitled_assets_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("assets");
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| format!("create {}: {}", dir.display(), e))?;
+    Ok(dir)
+}
+
+#[tauri::command]
+fn copy_image_to_assets(
+    app: tauri::AppHandle,
+    source_path: String,
+    doc_path: Option<String>,
+) -> Result<String, String> {
+    let source = PathBuf::from(&source_path);
+    if !source.exists() {
+        return Err(format!("Kaynak yok: {}", source.display()));
+    }
+    let file_name = source
+        .file_name()
+        .ok_or_else(|| "Kaynağın dosya adı yok".to_string())?
+        .to_string_lossy()
+        .to_string();
+
+    if let Some(dp) = doc_path {
+        let doc = PathBuf::from(&dp);
+        let (dir, dir_name) = doc_assets_dir(&doc)?;
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("create {}: {}", dir.display(), e))?;
+        let dest = unique_dest(&dir, &file_name);
+        std::fs::copy(&source, &dest)
+            .map_err(|e| format!("copy: {}", e))?;
+        let final_name = dest
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&file_name);
+        Ok(format!("{dir_name}/{final_name}"))
+    } else {
+        let dir = untitled_assets_dir(&app)?;
+        let dest = unique_dest(&dir, &file_name);
+        std::fs::copy(&source, &dest)
+            .map_err(|e| format!("copy: {}", e))?;
+        Ok(dest.to_string_lossy().to_string())
+    }
+}
+
+#[tauri::command]
+fn write_image_bytes(
+    app: tauri::AppHandle,
+    bytes: Vec<u8>,
+    extension: String,
+    doc_path: Option<String>,
+) -> Result<String, String> {
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis().to_string())
+        .unwrap_or_else(|_| "0".to_string());
+    let safe_ext = extension
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>();
+    let ext = if safe_ext.is_empty() { "png".to_string() } else { safe_ext };
+    let file_name = format!("paste-{ts}.{ext}");
+
+    if let Some(dp) = doc_path {
+        let doc = PathBuf::from(&dp);
+        let (dir, dir_name) = doc_assets_dir(&doc)?;
+        std::fs::create_dir_all(&dir)
+            .map_err(|e| format!("create {}: {}", dir.display(), e))?;
+        let dest = unique_dest(&dir, &file_name);
+        std::fs::write(&dest, &bytes).map_err(|e| format!("write: {}", e))?;
+        let final_name = dest
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&file_name);
+        Ok(format!("{dir_name}/{final_name}"))
+    } else {
+        let dir = untitled_assets_dir(&app)?;
+        let dest = unique_dest(&dir, &file_name);
+        std::fs::write(&dest, &bytes).map_err(|e| format!("write: {}", e))?;
+        Ok(dest.to_string_lossy().to_string())
+    }
+}
+
 // MVP-7 — Pandoc-driven export. We pipe the markdown source over stdin
 // instead of writing a temp file, and capture stderr so the frontend can
 // surface Pandoc's actual error message (missing LaTeX engine for PDF,
@@ -410,6 +552,9 @@ pub fn run() {
             ensure_user_config_exists,
             ensure_themes_dir_exists,
             get_initial_args,
+            pick_image_dialog,
+            copy_image_to_assets,
+            write_image_bytes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

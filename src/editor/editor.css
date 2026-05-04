@@ -215,6 +215,23 @@
   color: var(--muted);
 }
 
+/* ---------- Images (FAZ 11) ---------- */
+
+.editor .ProseMirror img.doc-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.editor .ProseMirror img.doc-image-broken {
+  min-width: 100px;
+  min-height: 60px;
+  background: var(--bg-soft);
+  border: 1px dashed var(--border);
+  position: relative;
+}
+
 /* ---------- Tables ---------- */
 
 .editor table {

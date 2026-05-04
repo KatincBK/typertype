@@ -489,6 +489,10 @@ function App() {
   }, []);
 
   const openSettings = useCallback(() => setSettingsOpen(true), []);
+  const insertImage = useCallback(
+    () => editorRef.current?.insertImageFromDialog(),
+    [],
+  );
 
   const handlersRef = useRef({
     handleSave,
@@ -499,6 +503,7 @@ function App() {
     openFind,
     closeFind,
     openSettings,
+    insertImage,
     findNext: () => editorRef.current?.findNext(),
     findPrev: () => editorRef.current?.findPrev(),
     findOpen,
@@ -512,6 +517,7 @@ function App() {
     openFind,
     closeFind,
     openSettings,
+    insertImage,
     findNext: () => editorRef.current?.findNext(),
     findPrev: () => editorRef.current?.findPrev(),
     findOpen,
@@ -565,6 +571,10 @@ function App() {
         // Ctrl+, opens Settings (Typora / VS Code convention).
         e.preventDefault();
         h.openSettings();
+      } else if (key === "i" && e.shiftKey) {
+        // Ctrl+Shift+I — Insert image (matches CONTROLS.md).
+        e.preventDefault();
+        h.insertImage();
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -633,6 +643,7 @@ function App() {
           <Editor
             ref={editorRef}
             initialMarkdown={loadedMd}
+            currentFilePath={filePath}
             onChange={setCurrentMd}
             onFindChange={setFindStatus}
           />

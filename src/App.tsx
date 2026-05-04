@@ -36,6 +36,8 @@ import { applyUserCss, loadUserCss } from "@/lib/userCss";
 import { buildHtmlDocument, type HtmlExportMode } from "@/lib/exportHtml";
 import { checkPandoc, exportViaPandoc } from "@/lib/exportPandoc";
 import { useSettings } from "@/lib/settings";
+import { getInitialArgs } from "@/lib/launchArgs";
+import { checkForUpdate } from "@/lib/updater";
 import { Sidebar } from "@/components/Sidebar";
 import { FindBar } from "@/components/FindBar";
 import { ExportMenu, type ExportFormat } from "@/components/ExportMenu";
@@ -356,14 +358,29 @@ function App() {
     editorRef.current?.findSet(findQuery, findOptions);
   }, [findOpen, findQuery, findOptions]);
 
-  // MVP-5 — On first mount, look for a leftover crash-recovery snapshot.
-  // If the user accepts, we splice the recovered content back into the
-  // editor (with savedMd left as SAMPLE so the doc is dirty and the user
-  // can save it explicitly). If they decline, we clear the snapshot so
-  // it doesn't ask again next launch.
+  // MVP-5/9 — startup sequence.
+  //   1. If the OS launched us with a file path (double-click, CLI arg),
+  //      open it directly. The user explicitly chose this file so any
+  //      leftover recovery snapshot is skipped.
+  //   2. Otherwise, look for a crash-recovery snapshot and, if found,
+  //      ask the user whether to restore it.
+  //   3. After either branch, flip `recoveryHandled` so the auto-save /
+  //      snapshot effects can start running.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      const args = await getInitialArgs();
+      if (cancelled) return;
+      if (args.file) {
+        const content = await safeReadFile(args.file);
+        if (cancelled) return;
+        if (content !== null) {
+          loadFile(args.file, content);
+        }
+        setRecoveryHandled(true);
+        return;
+      }
+
       const snap = await readRecovery();
       if (cancelled) return;
       if (!snap) {
@@ -390,9 +407,29 @@ function App() {
     return () => {
       cancelled = true;
     };
-    // recordRecent is stable; including only deps that should never change
-    // post-mount.
+    // loadFile / recordRecent are stable; we deliberately run this once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // MVP-9 — auto-updater check on mount. The placeholder endpoint in
+  // tauri.conf.json resolves to nothing during dev, so this is a quiet
+  // no-op until a real release manifest exists. checkForUpdate swallows
+  // network / configuration errors, so it never disrupts startup.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const update = await checkForUpdate();
+      if (cancelled || !update) return;
+      const ok = window.confirm(
+        `Yeni sürüm: v${update.version}\n${update.body ?? ""}\n\nŞimdi indirilip kurulsun mu? (Uygulama yeniden başlatılacak.)`,
+      );
+      if (!ok) return;
+      const { downloadAndInstallUpdate } = await import("@/lib/updater");
+      await downloadAndInstallUpdate();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // MVP-5/8 — auto-save: when the doc is dirty AND has a path on disk,

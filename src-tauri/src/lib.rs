@@ -1,8 +1,25 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use tauri::Manager;
+use tauri::{Manager, State};
 use tracing_subscriber::EnvFilter;
+
+// MVP-9 — initial CLI args. When the user double-clicks a .md file or
+// runs `tylike <path>` from a shell, the OS launches us with the path as
+// argv[1]. We snapshot it once at startup, expose it via a Tauri command,
+// and let the frontend pull it during mount so the recovery prompt and
+// the "open this file" flow can sequence themselves correctly.
+
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct InitialArgs {
+    file: Option<String>,
+}
+
+#[tauri::command]
+fn get_initial_args(state: State<'_, InitialArgs>) -> InitialArgs {
+    state.inner().clone()
+}
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -361,8 +378,19 @@ pub fn run() {
 
     tracing::info!("Starting Tylike");
 
+    // Capture the file path argument *before* Tauri parses its own argv
+    // (which strips known Tauri flags). For .md double-click on Windows
+    // and Linux, argv[1] is the absolute path the OS hands to us.
+    let initial_file = std::env::args()
+        .nth(1)
+        .filter(|a| !a.starts_with("--") && !a.is_empty());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(InitialArgs {
+            file: initial_file,
+        })
         .invoke_handler(tauri::generate_handler![
             greet,
             read_user_config,
@@ -381,6 +409,7 @@ pub fn run() {
             get_config_paths,
             ensure_user_config_exists,
             ensure_themes_dir_exists,
+            get_initial_args,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

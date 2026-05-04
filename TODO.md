@@ -49,7 +49,7 @@ Editör Typora seviyesine gelince bu sırayla devam:
 6. [x] **MVP-6**: Tema sistemi (light/dark + custom CSS)
 7. [x] **MVP-7**: Export (PDF, HTML, DOCX via Pandoc)
 8. [x] **MVP-8**: Settings UI
-9. [ ] **MVP-9**: Build & dağıtım (MSI + auto-updater)
+9. [x] **MVP-9**: Build & dağıtım (MSI + auto-updater)
 
 ---
 

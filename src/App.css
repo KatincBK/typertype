@@ -948,3 +948,53 @@ body,
 .image-lightbox-close:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* FAZ 18 (B) — spell-check right-click menu */
+
+.spell-menu {
+  position: fixed;
+  z-index: 1300;
+  min-width: 180px;
+  padding: 4px 0;
+  background: var(--bg-modal);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow-md);
+  font-size: 0.9rem;
+}
+
+.spell-menu-header {
+  padding: 4px 12px 6px;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.spell-menu-empty {
+  padding: 4px 12px 6px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.spell-menu-item {
+  display: block;
+  width: 100%;
+  padding: 5px 12px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.spell-menu-item:hover {
+  background: var(--bg-soft);
+}
+
+.spell-menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}

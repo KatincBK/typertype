@@ -1,7 +1,16 @@
 import { Plugin, PluginKey } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
+import type { EditorView } from "prosemirror-view";
 import type { Node } from "prosemirror-model";
 import { checkWord, onSpellChange } from "@/lib/spellChecker";
+
+export interface SpellContextDetail {
+  word: string;
+  from: number;
+  to: number;
+  x: number;
+  y: number;
+}
 
 // FAZ 18 — Spell-check decorations. The plugin owns a DecorationSet
 // keyed by misspelled word ranges. On every doc change we map the
@@ -56,12 +65,15 @@ function scanDoc(doc: Node): DecorationSet {
       const from = pos + m.index;
       const to = from + word.length;
       decos.push(
-        Decoration.inline(from, to, {
-          class: "spell-error",
-          // Stash the word on the decoration so a future right-click
-          // menu can look up suggestions without re-scanning the doc.
-          "data-spell-word": word,
-        }),
+        Decoration.inline(
+          from,
+          to,
+          { class: "spell-error" },
+          // The third arg is the spec, kept off the DOM. Stashing the
+          // word here lets the contextmenu handler look up suggestions
+          // without re-extracting from the doc.
+          { word },
+        ),
       );
     }
     return true;
@@ -91,6 +103,40 @@ export function buildSpellPlugin(): Plugin<DecorationSet> {
     props: {
       decorations(state) {
         return spellPluginKey.getState(state);
+      },
+      handleDOMEvents: {
+        contextmenu(view: EditorView, event: Event) {
+          const e = event as MouseEvent;
+          const decoSet = spellPluginKey.getState(view.state);
+          if (!decoSet) return false;
+          const hit = view.posAtCoords({ left: e.clientX, top: e.clientY });
+          if (!hit) return false;
+          // find() with the same from/to picks up decorations that
+          // contain this single position.
+          const matches = decoSet.find(hit.pos, hit.pos);
+          if (matches.length === 0) return false;
+          const deco = matches[0];
+          // The word is stashed on the decoration spec at scan time so
+          // we don't have to re-extract it from the doc.
+          const spec = deco.spec as { word?: string } | undefined;
+          const word =
+            spec?.word ?? view.state.doc.textBetween(deco.from, deco.to);
+          const detail: SpellContextDetail = {
+            word,
+            from: deco.from,
+            to: deco.to,
+            x: e.clientX,
+            y: e.clientY,
+          };
+          view.dom.dispatchEvent(
+            new CustomEvent<SpellContextDetail>("tylike:spell-context", {
+              bubbles: true,
+              detail,
+            }),
+          );
+          e.preventDefault();
+          return true;
+        },
       },
     },
     view(view) {

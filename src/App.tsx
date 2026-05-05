@@ -38,7 +38,10 @@ import { checkPandoc, exportViaPandoc } from "@/lib/exportPandoc";
 import { useSettings } from "@/lib/settings";
 import { getInitialArgs } from "@/lib/launchArgs";
 import { checkForUpdate } from "@/lib/updater";
-import { setSpellLanguage } from "@/lib/spellChecker";
+import { addUserWord, ignoreWord, setSpellLanguage } from "@/lib/spellChecker";
+import { loadUserDict, persistUserDict } from "@/lib/userDict";
+import { SpellMenu } from "@/components/SpellMenu";
+import type { SpellContextDetail } from "@/editor/spell";
 import {
   onFileChanged,
   unwatchFile,
@@ -191,14 +194,6 @@ function App() {
   const settingsApi = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // FAZ 18 — drive the spell-check engine from settings. setSpellLanguage
-  // dispatches the dictionary download / swap; the spell plugin re-scans
-  // automatically via onSpellChange when the engine becomes ready.
-  const spellLang = settingsApi.settings.spellcheck.language;
-  useEffect(() => {
-    setSpellLanguage(spellLang === "off" ? null : spellLang);
-  }, [spellLang]);
-
   // FAZ 11 follow-up — image dialogs are driven by custom DOM events
   // bubbled out of the ImageView NodeView. We hold the per-event commit
   // callback in a ref because dialog state lives in React but the
@@ -213,6 +208,63 @@ function App() {
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(
     null,
   );
+
+  // FAZ 18 (B) — spell-check right-click menu. Range stays in a ref
+  // because it's only consumed on action; React state would re-render
+  // the menu with each cursor flicker without buying us anything.
+  const [spellMenu, setSpellMenu] = useState<{
+    word: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const spellRangeRef = useRef<{ from: number; to: number } | null>(null);
+
+  // FAZ 18 — drive the spell-check engine from settings. setSpellLanguage
+  // dispatches the dictionary download / swap; the spell plugin re-scans
+  // automatically via onSpellChange when the engine becomes ready.
+  const spellLang = settingsApi.settings.spellcheck.language;
+  useEffect(() => {
+    setSpellLanguage(spellLang === "off" ? null : spellLang);
+  }, [spellLang]);
+
+  // Prime the user dictionary once at startup. Subsequent session
+  // additions are persisted incrementally via persistUserDict.
+  useEffect(() => {
+    void loadUserDict().then((words) => {
+      for (const w of words) addUserWord(w);
+    });
+  }, []);
+
+  // Listen for the right-click event the spell plugin bubbles up. The
+  // payload's from/to is mapped through later transactions implicitly —
+  // we use it the moment the user picks a suggestion, before further
+  // edits, so a static snapshot is fine.
+  useEffect(() => {
+    function onCtx(e: Event) {
+      const detail = (e as CustomEvent<SpellContextDetail>).detail;
+      spellRangeRef.current = { from: detail.from, to: detail.to };
+      setSpellMenu({ word: detail.word, x: detail.x, y: detail.y });
+    }
+    document.addEventListener("tylike:spell-context", onCtx);
+    return () => document.removeEventListener("tylike:spell-context", onCtx);
+  }, []);
+
+  const handleSpellReplace = useCallback((replacement: string) => {
+    const range = spellRangeRef.current;
+    if (!range) return;
+    editorRef.current?.replaceRange(range.from, range.to, replacement);
+  }, []);
+
+  const handleSpellAddToDict = useCallback(() => {
+    if (!spellMenu) return;
+    addUserWord(spellMenu.word);
+    void persistUserDict(spellMenu.word);
+  }, [spellMenu]);
+
+  const handleSpellIgnore = useCallback(() => {
+    if (!spellMenu) return;
+    ignoreWord(spellMenu.word);
+  }, [spellMenu]);
 
   const editorRef = useRef<EditorHandle>(null);
 
@@ -783,6 +835,16 @@ function App() {
         src={lightbox?.src ?? ""}
         alt={lightbox?.alt ?? ""}
         onClose={() => setLightbox(null)}
+      />
+      <SpellMenu
+        open={spellMenu !== null}
+        word={spellMenu?.word ?? ""}
+        x={spellMenu?.x ?? 0}
+        y={spellMenu?.y ?? 0}
+        onReplace={handleSpellReplace}
+        onAddToDict={handleSpellAddToDict}
+        onIgnore={handleSpellIgnore}
+        onClose={() => setSpellMenu(null)}
       />
     </div>
   );

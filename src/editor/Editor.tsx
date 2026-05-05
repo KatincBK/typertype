@@ -73,6 +73,7 @@ export interface EditorHandle {
   replaceCurrent: (replacement: string) => void;
   replaceAll: (replacement: string) => void;
   insertImageFromDialog: () => void;
+  replaceRange: (from: number, to: number, text: string) => void;
 }
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
@@ -224,6 +225,22 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         const view = viewRef.current;
         if (!view) return;
         void insertImageFromDialog(view, getDocPath);
+      },
+      replaceRange(from, to, text) {
+        const view = viewRef.current;
+        if (!view) return;
+        // Carry the marks at the start of the range so a corrected
+        // word inside bold / em / etc. text keeps its styling.
+        const startNode = view.state.doc.nodeAt(from);
+        const marks = startNode?.marks ?? [];
+        const tr = view.state.tr;
+        if (text) {
+          tr.replaceWith(from, to, view.state.schema.text(text, marks));
+        } else {
+          tr.delete(from, to);
+        }
+        view.dispatch(tr);
+        view.focus();
       },
     }),
     [],

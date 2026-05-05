@@ -514,6 +514,43 @@ fn read_entry(path: &Path) -> std::io::Result<FileEntry> {
     }
 }
 
+// FAZ 18 — user dictionary. Stored as a single JSON array file in the
+// app config dir so it survives reinstalls and rides along with the
+// other config files. Schema is intentionally just `string[]` — adding
+// metadata (e.g. per-language buckets) is a future concern; round-trip
+// it through the same shape so old files keep loading.
+
+fn user_dict_path(app: &tauri::AppHandle) -> Result<PathBuf, tauri::Error> {
+    let dir = app.path().app_config_dir()?;
+    Ok(dir.join("userdict.json"))
+}
+
+#[tauri::command]
+fn read_user_dict(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let path = user_dict_path(&app).map_err(|e| e.to_string())?;
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let json = std::fs::read_to_string(&path)
+        .map_err(|e| format!("read {}: {}", path.display(), e))?;
+    let words: Vec<String> = serde_json::from_str(&json)
+        .map_err(|e| format!("parse user dict: {}", e))?;
+    Ok(words)
+}
+
+#[tauri::command]
+fn write_user_dict(app: tauri::AppHandle, words: Vec<String>) -> Result<(), String> {
+    let path = user_dict_path(&app).map_err(|e| e.to_string())?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let json = serde_json::to_string_pretty(&words)
+        .map_err(|e| format!("serialize: {}", e))?;
+    std::fs::write(&path, json)
+        .map_err(|e| format!("write {}: {}", path.display(), e))?;
+    Ok(())
+}
+
 // FAZ 7 — file watcher. We watch the *parent directory* (not the file
 // itself) because most editors save by writing to a tmp file and renaming
 // over the original — file-level watches miss the rename, but a dir-level
@@ -655,6 +692,8 @@ pub fn run() {
             write_image_bytes,
             watch_file,
             unwatch_file,
+            read_user_dict,
+            write_user_dict,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -21,7 +21,7 @@ interface Props {
   onClose: () => void;
 }
 
-type Tab = "appearance" | "files" | "advanced";
+type Tab = "appearance" | "files" | "spellcheck" | "advanced";
 
 const FONT_PRESETS: Array<{ label: string; value: string }> = [
   {
@@ -65,7 +65,13 @@ export function SettingsDialog({ open, api, onClose }: Props) {
 
   if (!open) return null;
 
-  const { settings, updateAppearance, updateFiles, reset } = api;
+  const {
+    settings,
+    updateAppearance,
+    updateFiles,
+    updateSpellcheck,
+    reset,
+  } = api;
 
   return (
     <div className="settings-overlay" onMouseDown={onClose}>
@@ -90,6 +96,7 @@ export function SettingsDialog({ open, api, onClose }: Props) {
         <nav className="settings-tabs">
           <TabButton id="appearance" label="Görünüm" tab={tab} setTab={setTab} />
           <TabButton id="files" label="Dosya" tab={tab} setTab={setTab} />
+          <TabButton id="spellcheck" label="Yazım" tab={tab} setTab={setTab} />
           <TabButton id="advanced" label="Gelişmiş" tab={tab} setTab={setTab} />
         </nav>
         <div className="settings-body">
@@ -101,6 +108,12 @@ export function SettingsDialog({ open, api, onClose }: Props) {
           ) : null}
           {tab === "files" ? (
             <FilesTab settings={settings.files} update={updateFiles} />
+          ) : null}
+          {tab === "spellcheck" ? (
+            <SpellcheckTab
+              settings={settings.spellcheck}
+              update={updateSpellcheck}
+            />
           ) : null}
           {tab === "advanced" ? <AdvancedTab paths={paths} /> : null}
         </div>
@@ -258,6 +271,38 @@ function FilesTab({
       </Field>
       <p className="settings-hint">
         Kaydedilmemiş içerik için kurtarma dosyasına yazma sıklığı.
+      </p>
+    </>
+  );
+}
+
+function SpellcheckTab({
+  settings,
+  update,
+}: {
+  settings: Settings["spellcheck"];
+  update: (patch: Partial<Settings["spellcheck"]>) => void;
+}) {
+  return (
+    <>
+      <Field label="Yazım denetimi dili">
+        <select
+          value={settings.language}
+          onChange={(e) =>
+            update({
+              language: e.target.value as Settings["spellcheck"]["language"],
+            })
+          }
+        >
+          <option value="off">Kapalı</option>
+          <option value="en">İngilizce</option>
+          <option value="tr">Türkçe</option>
+        </select>
+      </Field>
+      <p className="settings-hint">
+        Türkçe sözlüğü ilk seçildiğinde yaklaşık 9 MB sözlük indirilir;
+        bir sonraki açılışta önbellekten gelir. Kod blokları, matematik,
+        bağlantılar ve emoji'ler atlanır.
       </p>
     </>
   );

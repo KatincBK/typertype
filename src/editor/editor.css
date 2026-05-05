@@ -215,6 +215,18 @@
   color: var(--muted);
 }
 
+/* ---------- Spell check (FAZ 18) ---------- */
+
+/* Wavy red underline mirrors the browser-native style. We use
+ * text-decoration so it doesn't disturb the line metrics, with a
+ * fallback background-image gradient for engines that don't render the
+ * wavy variant convincingly. */
+.editor .ProseMirror .spell-error {
+  text-decoration: underline wavy var(--spell-error, #d23a3a);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+}
+
 /* ---------- Images (FAZ 11) ---------- */
 
 .editor .ProseMirror .image-wrapper {

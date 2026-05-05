@@ -40,6 +40,7 @@ import {
   insertImageFromDialog,
   insertImageFromPath,
 } from "./imageHandlers";
+import { buildSpellPlugin } from "./spell";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { logger } from "@/lib/logger";
 
@@ -247,6 +248,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         buildTableToolbarPlugin(),
         ...buildTablePlugins(),
         buildImagePastePlugin(schema, getDocPath),
+        buildSpellPlugin(),
         buildFindPlugin(),
         buildKeymap(schema, overrides),
         keymap(baseKeymap),

@@ -38,6 +38,7 @@ import { checkPandoc, exportViaPandoc } from "@/lib/exportPandoc";
 import { useSettings } from "@/lib/settings";
 import { getInitialArgs } from "@/lib/launchArgs";
 import { checkForUpdate } from "@/lib/updater";
+import { setSpellLanguage } from "@/lib/spellChecker";
 import {
   onFileChanged,
   unwatchFile,
@@ -189,6 +190,14 @@ function App() {
   // delays below)
   const settingsApi = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // FAZ 18 — drive the spell-check engine from settings. setSpellLanguage
+  // dispatches the dictionary download / swap; the spell plugin re-scans
+  // automatically via onSpellChange when the engine becomes ready.
+  const spellLang = settingsApi.settings.spellcheck.language;
+  useEffect(() => {
+    setSpellLanguage(spellLang === "off" ? null : spellLang);
+  }, [spellLang]);
 
   // FAZ 11 follow-up — image dialogs are driven by custom DOM events
   // bubbled out of the ImageView NodeView. We hold the per-event commit

@@ -5,6 +5,8 @@ import { logger } from "./logger";
 // across sessions; applied via CSS variables on :root for the appearance
 // fields and read directly by App.tsx for the file timing fields.
 
+export type SpellLanguage = "off" | "en" | "tr";
+
 export interface Settings {
   appearance: {
     fontFamily: string;
@@ -15,6 +17,9 @@ export interface Settings {
   files: {
     autoSaveMs: number;
     recoveryMs: number;
+  };
+  spellcheck: {
+    language: SpellLanguage;
   };
 }
 
@@ -30,6 +35,9 @@ export const DEFAULT_SETTINGS: Settings = {
     autoSaveMs: 2000,
     recoveryMs: 3000,
   },
+  spellcheck: {
+    language: "off",
+  },
 };
 
 const STORAGE_KEY = "tylike.settings";
@@ -42,6 +50,11 @@ function mergeWithDefaults(input: unknown): Settings {
   if (!isObject(input)) return DEFAULT_SETTINGS;
   const a = isObject(input.appearance) ? input.appearance : {};
   const f = isObject(input.files) ? input.files : {};
+  const s = isObject(input.spellcheck) ? input.spellcheck : {};
+  const lang =
+    s.language === "off" || s.language === "en" || s.language === "tr"
+      ? s.language
+      : DEFAULT_SETTINGS.spellcheck.language;
   return {
     appearance: {
       fontFamily:
@@ -79,6 +92,7 @@ function mergeWithDefaults(input: unknown): Settings {
           ? f.recoveryMs
           : DEFAULT_SETTINGS.files.recoveryMs,
     },
+    spellcheck: { language: lang },
   };
 }
 
@@ -114,6 +128,7 @@ export interface SettingsApi {
   update: (patch: Partial<Settings>) => void;
   updateAppearance: (patch: Partial<Settings["appearance"]>) => void;
   updateFiles: (patch: Partial<Settings["files"]>) => void;
+  updateSpellcheck: (patch: Partial<Settings["spellcheck"]>) => void;
   reset: () => void;
 }
 
@@ -141,7 +156,22 @@ export function useSettings(): SettingsApi {
       mergeWithDefaults({ ...prev, files: { ...prev.files, ...patch } }),
     );
   };
+  const updateSpellcheck: SettingsApi["updateSpellcheck"] = (patch) => {
+    setSettings((prev) =>
+      mergeWithDefaults({
+        ...prev,
+        spellcheck: { ...prev.spellcheck, ...patch },
+      }),
+    );
+  };
   const reset = () => setSettings(DEFAULT_SETTINGS);
 
-  return { settings, update, updateAppearance, updateFiles, reset };
+  return {
+    settings,
+    update,
+    updateAppearance,
+    updateFiles,
+    updateSpellcheck,
+    reset,
+  };
 }

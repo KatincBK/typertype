@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { FindOptions, FindReportStatus } from "@/editor";
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function FindBar(props: Props) {
+  const { t } = useTranslation();
   const queryRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus the query input each time the bar mounts. mode is in deps so
@@ -51,8 +53,11 @@ export function FindBar(props: Props) {
 
   const matchLabel = props.query
     ? props.status.matchCount === 0
-      ? "0 sonuç"
-      : `${props.status.currentIndex + 1} / ${props.status.matchCount}`
+      ? t("find.noMatches")
+      : t("find.matchStatus", {
+          current: props.status.currentIndex + 1,
+          total: props.status.matchCount,
+        })
     : "";
 
   return (
@@ -62,7 +67,7 @@ export function FindBar(props: Props) {
           ref={queryRef}
           className="find-input"
           type="text"
-          placeholder="Bul…"
+          placeholder={`${t("find.findPlaceholder")}…`}
           value={props.query}
           onChange={(e) => props.onQueryChange(e.target.value)}
           onKeyDown={handleQueryKey}
@@ -71,7 +76,7 @@ export function FindBar(props: Props) {
         <button
           type="button"
           className="find-btn"
-          title="Önceki (Shift+Enter)"
+          title={`${t("find.previous")} (Shift+Enter)`}
           onClick={props.onFindPrev}
           disabled={props.status.matchCount === 0}
         >
@@ -80,7 +85,7 @@ export function FindBar(props: Props) {
         <button
           type="button"
           className="find-btn"
-          title="Sonraki (Enter)"
+          title={`${t("find.next")} (Enter)`}
           onClick={props.onFindNext}
           disabled={props.status.matchCount === 0}
         >
@@ -89,7 +94,7 @@ export function FindBar(props: Props) {
         <button
           type="button"
           className={`find-btn find-toggle${props.options.caseSensitive ? " is-active" : ""}`}
-          title="Büyük/küçük harfe duyarlı"
+          title={t("find.matchCase")}
           aria-pressed={props.options.caseSensitive}
           onClick={() => props.onOptionToggle("caseSensitive")}
         >
@@ -98,7 +103,7 @@ export function FindBar(props: Props) {
         <button
           type="button"
           className={`find-btn find-toggle${props.options.wholeWord ? " is-active" : ""}`}
-          title="Tam kelime"
+          title={t("find.wholeWord")}
           aria-pressed={props.options.wholeWord}
           onClick={() => props.onOptionToggle("wholeWord")}
         >
@@ -107,7 +112,7 @@ export function FindBar(props: Props) {
         <button
           type="button"
           className={`find-btn find-toggle${props.options.regex ? " is-active" : ""}`}
-          title="Düzenli ifade"
+          title={t("find.regex")}
           aria-pressed={props.options.regex}
           onClick={() => props.onOptionToggle("regex")}
         >
@@ -116,7 +121,7 @@ export function FindBar(props: Props) {
         <button
           type="button"
           className="find-btn find-close"
-          title="Kapat (Esc)"
+          title={`${t("common.close")} (Esc)`}
           onClick={props.onClose}
         >
           ×
@@ -127,7 +132,7 @@ export function FindBar(props: Props) {
           <input
             className="find-input"
             type="text"
-            placeholder="Değiştir…"
+            placeholder={`${t("find.replacePlaceholder")}…`}
             value={props.replacement}
             onChange={(e) => props.onReplacementChange(e.target.value)}
             onKeyDown={handleReplacementKey}
@@ -135,20 +140,20 @@ export function FindBar(props: Props) {
           <button
             type="button"
             className="find-btn"
-            title="Sıradakini değiştir (Enter)"
+            title={`${t("find.replaceOne")} (Enter)`}
             onClick={props.onReplaceCurrent}
             disabled={props.status.matchCount === 0}
           >
-            Değiştir
+            {t("find.replaceOne")}
           </button>
           <button
             type="button"
             className="find-btn"
-            title="Tümünü değiştir (Shift+Enter)"
+            title={`${t("find.replaceAll")} (Shift+Enter)`}
             onClick={props.onReplaceAll}
             disabled={props.status.matchCount === 0}
           >
-            Tümü
+            {t("find.replaceAll")}
           </button>
         </div>
       ) : null}

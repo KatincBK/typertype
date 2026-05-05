@@ -6,6 +6,7 @@ import { logger } from "./logger";
 // fields and read directly by App.tsx for the file timing fields.
 
 export type SpellLanguage = "off" | "en" | "tr";
+export type AppLanguage = "tr" | "en";
 
 export interface Settings {
   appearance: {
@@ -20,6 +21,9 @@ export interface Settings {
   };
   spellcheck: {
     language: SpellLanguage;
+  };
+  app: {
+    language: AppLanguage;
   };
 }
 
@@ -38,6 +42,9 @@ export const DEFAULT_SETTINGS: Settings = {
   spellcheck: {
     language: "off",
   },
+  app: {
+    language: "tr",
+  },
 };
 
 const STORAGE_KEY = "tylike.settings";
@@ -55,6 +62,11 @@ function mergeWithDefaults(input: unknown): Settings {
     s.language === "off" || s.language === "en" || s.language === "tr"
       ? s.language
       : DEFAULT_SETTINGS.spellcheck.language;
+  const appBlock = isObject(input.app) ? input.app : {};
+  const appLang =
+    appBlock.language === "tr" || appBlock.language === "en"
+      ? appBlock.language
+      : DEFAULT_SETTINGS.app.language;
   return {
     appearance: {
       fontFamily:
@@ -93,6 +105,7 @@ function mergeWithDefaults(input: unknown): Settings {
           : DEFAULT_SETTINGS.files.recoveryMs,
     },
     spellcheck: { language: lang },
+    app: { language: appLang },
   };
 }
 
@@ -129,6 +142,7 @@ export interface SettingsApi {
   updateAppearance: (patch: Partial<Settings["appearance"]>) => void;
   updateFiles: (patch: Partial<Settings["files"]>) => void;
   updateSpellcheck: (patch: Partial<Settings["spellcheck"]>) => void;
+  updateApp: (patch: Partial<Settings["app"]>) => void;
   reset: () => void;
 }
 
@@ -164,6 +178,14 @@ export function useSettings(): SettingsApi {
       }),
     );
   };
+  const updateApp: SettingsApi["updateApp"] = (patch) => {
+    setSettings((prev) =>
+      mergeWithDefaults({
+        ...prev,
+        app: { ...prev.app, ...patch },
+      }),
+    );
+  };
   const reset = () => setSettings(DEFAULT_SETTINGS);
 
   return {
@@ -172,6 +194,7 @@ export function useSettings(): SettingsApi {
     updateAppearance,
     updateFiles,
     updateSpellcheck,
+    updateApp,
     reset,
   };
 }

@@ -5,6 +5,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
+import i18n, { setAppLanguage } from "@/lib/i18n";
 import {
   Editor,
   DEFAULT_FIND_OPTIONS,
@@ -144,11 +146,9 @@ Bu cümlede bir dipnot[^1] var, ardından bir tane daha[^typora].
 - Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;
 
-const UNTITLED_LABEL = "Adsız";
-const DIRTY_CONFIRM =
-  "Kaydedilmemiş değişiklikler kaybolacak. Devam etmek istiyor musunuz?";
-
 function App() {
+  const { t } = useTranslation();
+  const UNTITLED_LABEL = t("common.untitled");
   // Three markdown snapshots — see the MVP-2 commit message for why these
   // are separate. loadedMd drives the <Editor> remount.
   const [filePath, setFilePath] = useState<string | null>(null);
@@ -219,6 +219,13 @@ function App() {
   } | null>(null);
   const spellRangeRef = useRef<{ from: number; to: number } | null>(null);
 
+  // FAZ 19 — drive UI language from settings; setAppLanguage flips
+  // i18next's active resource bundle and updates the <html lang> attr.
+  const appLang = settingsApi.settings.app.language;
+  useEffect(() => {
+    setAppLanguage(appLang);
+  }, [appLang]);
+
   // FAZ 18 — drive the spell-check engine from settings. setSpellLanguage
   // dispatches the dictionary download / swap; the spell plugin re-scans
   // automatically via onSpellChange when the engine becomes ready.
@@ -275,8 +282,8 @@ function App() {
 
   const confirmDiscardDirty = useCallback(() => {
     if (!dirty) return true;
-    return window.confirm(DIRTY_CONFIRM);
-  }, [dirty]);
+    return window.confirm(t("common.discardConfirm"));
+  }, [dirty, t]);
 
   const closeFind = useCallback(() => {
     setFindOpen(false);
@@ -396,13 +403,14 @@ function App() {
         if (!target) return;
         const doc = buildHtmlDocument(currentMd, mode, baseName);
         const ok = await safeSaveFile(target, doc);
-        if (ok) window.alert(`HTML dışa aktarıldı: ${target}`);
+        if (ok)
+          window.alert(t("export.exported", { format: "HTML", path: target }));
         return;
       }
 
       const check = await checkPandoc();
       if (!check.available) {
-        window.alert(check.error ?? "Pandoc bulunamadı.");
+        window.alert(check.error ?? t("export.pandocMissing"));
         return;
       }
 
@@ -421,12 +429,17 @@ function App() {
       if (!target) return;
       const result = await exportViaPandoc(currentMd, target, pandoc);
       if (result.ok) {
-        window.alert(`${format.toUpperCase()} dışa aktarıldı: ${target}`);
+        window.alert(
+          t("export.exported", {
+            format: format.toUpperCase(),
+            path: target,
+          }),
+        );
       } else {
-        window.alert("Dışa aktarma hatası:\n" + (result.error ?? ""));
+        window.alert(t("export.errorPrefix") + (result.error ?? ""));
       }
     },
-    [filePath, currentMd],
+    [filePath, currentMd, t],
   );
 
   // MVP-4 — find/replace handlers
@@ -478,9 +491,9 @@ function App() {
       }
       const label = snap.filePath ? basename(snap.filePath) : UNTITLED_LABEL;
       const when = new Date(snap.savedAt).toLocaleString();
-      const ok = window.confirm(
-        `${label} için kaydedilmemiş değişiklikler bulundu (${when}). Geri yüklensin mi?`,
-      );
+      // Use i18n.t directly: this effect runs once on mount and can't
+      // see future language changes through the closured t().
+      const ok = window.confirm(i18n.t("recovery.prompt", { label, when }));
       if (cancelled) return;
       if (ok) {
         setLoadedMd(snap.content);
@@ -510,7 +523,10 @@ function App() {
       const update = await checkForUpdate();
       if (cancelled || !update) return;
       const ok = window.confirm(
-        `Yeni sürüm: v${update.version}\n${update.body ?? ""}\n\nŞimdi indirilip kurulsun mu? (Uygulama yeniden başlatılacak.)`,
+        i18n.t("updater.prompt", {
+          version: update.version,
+          body: update.body ?? "",
+        }),
       );
       if (!ok) return;
       const { downloadAndInstallUpdate } = await import("@/lib/updater");
@@ -612,9 +628,7 @@ function App() {
       if (incoming === s.savedMd) return;
       const dirty = s.currentMd !== s.savedMd;
       if (dirty) {
-        const ok = window.confirm(
-          "Dosya dışarıda değişti. Diskten yeniden yüklensin mi? (Yerel değişiklikler kaybolacak.)",
-        );
+        const ok = window.confirm(i18n.t("fileWatcher.externalChange"));
         if (!ok) {
           // Keep local edits but mark as dirty against the new disk
           // baseline so the next save knows it's overwriting.
@@ -753,12 +767,14 @@ function App() {
   return (
     <div className={`app-shell${sidebarOpen ? " has-sidebar" : ""}`}>
       <header className="app-header">
-        <h1 className="app-title">Tylike</h1>
+        <h1 className="app-title">{t("header.appName")}</h1>
         <span className="app-file" title={filePath ?? UNTITLED_LABEL}>
           {fileLabel}
           {dirty ? <span className="app-dirty"> ●</span> : null}
         </span>
-        <span className="app-stats">{currentMd.length} karakter</span>
+        <span className="app-stats">
+          {t("header.characters", { count: currentMd.length })}
+        </span>
         <ExportMenu onExport={handleExport} />
         <select
           className="app-theme-select"
@@ -766,12 +782,12 @@ function App() {
           onChange={(e) =>
             theme.setPreference(e.target.value as ThemePreference)
           }
-          title="Tema"
+          title={t("header.themeTitle")}
         >
-          <option value="auto">Otomatik</option>
-          <option value="light">Açık</option>
-          <option value="dark">Koyu</option>
-          <option value="sepia">Sepya</option>
+          <option value="auto">{t("header.themeAuto")}</option>
+          <option value="light">{t("header.themeLight")}</option>
+          <option value="dark">{t("header.themeDark")}</option>
+          <option value="sepia">{t("header.themeSepia")}</option>
         </select>
       </header>
       <div className="app-body">

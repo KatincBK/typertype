@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -11,6 +12,7 @@ interface Props {
 // from the ImageView's "⛶" popover button. ESC closes; any backdrop
 // click closes too.
 export function ImageLightbox({ open, src, alt, onClose }: Props) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -32,12 +34,12 @@ export function ImageLightbox({ open, src, alt, onClose }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
       role="dialog"
-      aria-label="Görsel önizleme"
+      aria-label={t("image.lightbox.label")}
     >
       <button
         type="button"
         className="image-lightbox-close"
-        title="Kapat (Esc)"
+        title={t("image.lightbox.closeTitle")}
         onClick={onClose}
       >
         ×

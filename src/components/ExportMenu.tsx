@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 // MVP-7 — Export dropdown. Pure UI; the actual export logic (HTML build,
 // Pandoc invoke, save dialog, etc.) lives in the App handler this calls.
@@ -15,19 +16,22 @@ export type ExportFormat =
 
 interface Option {
   id: ExportFormat;
-  label: string;
+  labelKey: string;
   hint?: string;
 }
 
+// Hint strings stay un-keyed: they're either parenthetical proper nouns
+// (Pandoc, Microsoft Word) or short technical phrases that read fine in
+// either locale. Only the format names go through i18next.
 const OPTIONS: Option[] = [
-  { id: "html-styled", label: "HTML (stilli)" },
-  { id: "html-plain", label: "HTML (düz)" },
-  { id: "docx", label: "DOCX (Pandoc)", hint: "Microsoft Word" },
-  { id: "pdf", label: "PDF (Pandoc)", hint: "LaTeX gerektirir" },
-  { id: "latex", label: "LaTeX (Pandoc)" },
-  { id: "epub", label: "ePub (Pandoc)" },
-  { id: "odt", label: "ODT (Pandoc)", hint: "OpenDocument" },
-  { id: "rtf", label: "RTF (Pandoc)" },
+  { id: "html-styled", labelKey: "export.htmlStyled" },
+  { id: "html-plain", labelKey: "export.htmlPlain" },
+  { id: "docx", labelKey: "export.docx", hint: "Pandoc · Microsoft Word" },
+  { id: "pdf", labelKey: "export.pdf", hint: "Pandoc + LaTeX" },
+  { id: "latex", labelKey: "export.latex", hint: "Pandoc" },
+  { id: "epub", labelKey: "export.epub", hint: "Pandoc" },
+  { id: "odt", labelKey: "export.odt", hint: "Pandoc · OpenDocument" },
+  { id: "rtf", labelKey: "export.rtf", hint: "Pandoc" },
 ];
 
 interface Props {
@@ -35,6 +39,7 @@ interface Props {
 }
 
 export function ExportMenu({ onExport }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -59,9 +64,9 @@ export function ExportMenu({ onExport }: Props) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
-        title="Dışa aktar"
+        title={t("export.menuTitle")}
       >
-        Dışa Aktar ▾
+        {t("export.menuTitle")} ▾
       </button>
       {open ? (
         <div className="export-menu-dropdown" role="menu">
@@ -76,7 +81,7 @@ export function ExportMenu({ onExport }: Props) {
                 onExport(opt.id);
               }}
             >
-              <span className="export-menu-label">{opt.label}</span>
+              <span className="export-menu-label">{t(opt.labelKey)}</span>
               {opt.hint ? (
                 <span className="export-menu-hint">{opt.hint}</span>
               ) : null}

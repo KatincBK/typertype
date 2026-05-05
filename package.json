@@ -17,6 +17,7 @@
     "@tauri-apps/plugin-updater": "^2",
     "dictionary-en": "^4.0.0",
     "dictionary-tr": "^2.0.0",
+    "i18next": "^26.0.8",
     "katex": "^0.16.11",
     "markdown-it": "^14.1.1",
     "markdown-it-emoji": "^3.0.0",
@@ -38,7 +39,8 @@
     "prosemirror-tables": "^1.6.4",
     "prosemirror-view": "^1.41.8",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-i18next": "^17.0.6"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

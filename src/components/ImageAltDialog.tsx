@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ export function ImageAltDialog({
   onCommit,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const [alt, setAlt] = useState(initialAlt);
   const [title, setTitle] = useState(initialTitle);
   const altRef = useRef<HTMLInputElement>(null);
@@ -43,10 +45,14 @@ export function ImageAltDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="image-alt-dialog" role="dialog" aria-label="Görsel özellikleri">
-        <h2>Görsel Özellikleri</h2>
+      <div
+        className="image-alt-dialog"
+        role="dialog"
+        aria-label={t("image.altDialog.title")}
+      >
+        <h2>{t("image.altDialog.title")}</h2>
         <label className="image-alt-field">
-          <span>Alt metin</span>
+          <span>{t("image.altDialog.alt")}</span>
           <input
             ref={altRef}
             type="text"
@@ -59,7 +65,7 @@ export function ImageAltDialog({
           />
         </label>
         <label className="image-alt-field">
-          <span>Başlık (hover ipucu)</span>
+          <span>{t("image.altDialog.titleField")}</span>
           <input
             type="text"
             value={title}
@@ -72,10 +78,10 @@ export function ImageAltDialog({
         </label>
         <div className="image-alt-actions">
           <button type="button" onClick={onClose}>
-            Vazgeç
+            {t("common.cancel")}
           </button>
           <button type="button" className="primary" onClick={submit}>
-            Tamam
+            {t("common.ok")}
           </button>
         </div>
       </div>

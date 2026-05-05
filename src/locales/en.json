@@ -1,0 +1,126 @@
+{
+  "common": {
+    "untitled": "Untitled",
+    "discardConfirm": "Unsaved changes will be lost. Continue?",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "open": "Open",
+    "save": "Save",
+    "saveAs": "Save As"
+  },
+  "header": {
+    "appName": "Tylike",
+    "characters": "{{count}} characters",
+    "themeTitle": "Theme",
+    "themeAuto": "Auto",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSepia": "Sepia"
+  },
+  "find": {
+    "findPlaceholder": "Find",
+    "replacePlaceholder": "Replace",
+    "matchCase": "Match case",
+    "wholeWord": "Whole word",
+    "regex": "Regular expression",
+    "previous": "Previous",
+    "next": "Next",
+    "replaceOne": "Replace",
+    "replaceAll": "Replace all",
+    "noMatches": "No matches",
+    "matchStatus": "{{current}}/{{total}}"
+  },
+  "export": {
+    "menuTitle": "Export",
+    "htmlStyled": "HTML (styled)",
+    "htmlPlain": "HTML (plain)",
+    "docx": "Word (.docx)",
+    "pdf": "PDF",
+    "latex": "LaTeX (.tex)",
+    "epub": "ePub",
+    "odt": "OpenDocument (.odt)",
+    "rtf": "Rich Text (.rtf)",
+    "exported": "{{format}} exported: {{path}}",
+    "errorPrefix": "Export error:\n",
+    "pandocMissing": "Pandoc not found."
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "appearance": "Appearance",
+      "files": "Files",
+      "spellcheck": "Spelling",
+      "advanced": "Advanced"
+    },
+    "appearance": {
+      "fontPreset": "Font family (preset)",
+      "fontCustom": "Font family (CSS)",
+      "fontPlaceholder": "e.g. Inter, system-ui, sans-serif",
+      "fontSize": "Font size — {{size}}px",
+      "lineHeight": "Line height — {{value}}",
+      "editorWidth": "Editor width — {{value}}px",
+      "language": "Interface language",
+      "languageTr": "Turkish",
+      "languageEn": "English",
+      "languageHint": "Changing the interface language doesn't affect the spell-check dictionary used for the document."
+    },
+    "files": {
+      "autoSaveDelay": "Auto-save delay — {{seconds}}s",
+      "autoSaveHint": "Time after editing stops before the file is written (only files saved to disk).",
+      "recoveryDelay": "Recovery snapshot delay — {{seconds}}s",
+      "recoveryHint": "How often unsaved content is written to the recovery file."
+    },
+    "spellcheck": {
+      "language": "Spell-check language",
+      "off": "Off",
+      "en": "English",
+      "tr": "Turkish",
+      "hint": "Choosing Turkish for the first time downloads about 9 MB of dictionary data; subsequent launches use the cache. Code blocks, math, links and emoji are skipped."
+    },
+    "advanced": {
+      "intro": "Advanced settings are managed via JSON / CSS files. Restart the app after editing.",
+      "openConfig": "Open config file (conf.user.json)",
+      "openThemes": "Open themes folder (themes/custom.css)"
+    },
+    "footer": {
+      "reset": "Reset to defaults",
+      "resetConfirm": "All settings will return to defaults. Continue?"
+    }
+  },
+  "image": {
+    "popover": {
+      "alignLeft": "Align left",
+      "alignCenter": "Center",
+      "alignRight": "Align right",
+      "alignClear": "Clear alignment",
+      "editAlt": "Edit alt text",
+      "fullscreen": "View fullscreen",
+      "resetSize": "Original size"
+    },
+    "altDialog": {
+      "title": "Image Properties",
+      "alt": "Alt text",
+      "titleField": "Title (hover tooltip)"
+    },
+    "lightbox": {
+      "label": "Image preview",
+      "closeTitle": "Close (Esc)"
+    },
+    "resizeHandle": "Resize"
+  },
+  "spell": {
+    "noSuggestions": "No suggestions",
+    "addToDict": "Add to dictionary",
+    "ignore": "Ignore (session)"
+  },
+  "fileWatcher": {
+    "externalChange": "The file changed externally. Reload from disk? (Local changes will be lost.)"
+  },
+  "recovery": {
+    "prompt": "Unsaved changes found for {{label}} ({{when}}). Restore?"
+  },
+  "updater": {
+    "prompt": "New version: v{{version}}\n{{body}}\n\nDownload and install now? (The app will restart.)"
+  }
+}

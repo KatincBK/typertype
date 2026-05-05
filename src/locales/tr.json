@@ -1,0 +1,126 @@
+{
+  "common": {
+    "untitled": "Adsız",
+    "discardConfirm": "Kaydedilmemiş değişiklikler kaybolacak. Devam etmek istiyor musunuz?",
+    "ok": "Tamam",
+    "cancel": "Vazgeç",
+    "close": "Kapat",
+    "open": "Aç",
+    "save": "Kaydet",
+    "saveAs": "Farklı Kaydet"
+  },
+  "header": {
+    "appName": "Tylike",
+    "characters": "{{count}} karakter",
+    "themeTitle": "Tema",
+    "themeAuto": "Otomatik",
+    "themeLight": "Açık",
+    "themeDark": "Koyu",
+    "themeSepia": "Sepya"
+  },
+  "find": {
+    "findPlaceholder": "Bul",
+    "replacePlaceholder": "Değiştir",
+    "matchCase": "Eşleşen büyük/küçük harf",
+    "wholeWord": "Tam kelime",
+    "regex": "Düzenli ifade",
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "replaceOne": "Değiştir",
+    "replaceAll": "Tümünü değiştir",
+    "noMatches": "Eşleşme yok",
+    "matchStatus": "{{current}}/{{total}}"
+  },
+  "export": {
+    "menuTitle": "Dışa Aktar",
+    "htmlStyled": "HTML (stilli)",
+    "htmlPlain": "HTML (sade)",
+    "docx": "Word (.docx)",
+    "pdf": "PDF",
+    "latex": "LaTeX (.tex)",
+    "epub": "ePub",
+    "odt": "OpenDocument (.odt)",
+    "rtf": "Zengin Metin (.rtf)",
+    "exported": "{{format}} dışa aktarıldı: {{path}}",
+    "errorPrefix": "Dışa aktarma hatası:\n",
+    "pandocMissing": "Pandoc bulunamadı."
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "tabs": {
+      "appearance": "Görünüm",
+      "files": "Dosya",
+      "spellcheck": "Yazım",
+      "advanced": "Gelişmiş"
+    },
+    "appearance": {
+      "fontPreset": "Font ailesi (hazır)",
+      "fontCustom": "Font ailesi (CSS)",
+      "fontPlaceholder": "örn. Inter, system-ui, sans-serif",
+      "fontSize": "Font boyutu — {{size}}px",
+      "lineHeight": "Satır yüksekliği — {{value}}",
+      "editorWidth": "Editör genişliği — {{value}}px",
+      "language": "Arayüz dili",
+      "languageTr": "Türkçe",
+      "languageEn": "İngilizce",
+      "languageHint": "Arayüz dilini değiştirmek metin üzerindeki yazım denetimi sözlüğünü etkilemez."
+    },
+    "files": {
+      "autoSaveDelay": "Otomatik kaydetme gecikmesi — {{seconds}}s",
+      "autoSaveHint": "Düzenleme durduktan sonra dosyaya yazılana kadar geçen süre (yalnızca diske kaydedilmiş dosyalar).",
+      "recoveryDelay": "Kurtarma anlık görüntüsü gecikmesi — {{seconds}}s",
+      "recoveryHint": "Kaydedilmemiş içerik için kurtarma dosyasına yazma sıklığı."
+    },
+    "spellcheck": {
+      "language": "Yazım denetimi dili",
+      "off": "Kapalı",
+      "en": "İngilizce",
+      "tr": "Türkçe",
+      "hint": "Türkçe sözlüğü ilk seçildiğinde yaklaşık 9 MB sözlük indirilir; bir sonraki açılışta önbellekten gelir. Kod blokları, matematik, bağlantılar ve emoji'ler atlanır."
+    },
+    "advanced": {
+      "intro": "Gelişmiş ayarlar JSON / CSS dosyaları üzerinden yönetilir. Düzenleyince uygulamayı yeniden başlatın.",
+      "openConfig": "Konfig dosyasını aç (conf.user.json)",
+      "openThemes": "Tema klasörünü aç (themes/custom.css)"
+    },
+    "footer": {
+      "reset": "Varsayılana Sıfırla",
+      "resetConfirm": "Tüm ayarlar varsayılana dönecek. Devam?"
+    }
+  },
+  "image": {
+    "popover": {
+      "alignLeft": "Sola hizala",
+      "alignCenter": "Ortala",
+      "alignRight": "Sağa hizala",
+      "alignClear": "Hizalamayı kaldır",
+      "editAlt": "Alt metnini düzenle",
+      "fullscreen": "Tam ekran görüntüle",
+      "resetSize": "Orijinal boyut"
+    },
+    "altDialog": {
+      "title": "Görsel Özellikleri",
+      "alt": "Alt metin",
+      "titleField": "Başlık (hover ipucu)"
+    },
+    "lightbox": {
+      "label": "Görsel önizleme",
+      "closeTitle": "Kapat (Esc)"
+    },
+    "resizeHandle": "Yeniden boyutlandır"
+  },
+  "spell": {
+    "noSuggestions": "Öneri yok",
+    "addToDict": "Sözlüğe ekle",
+    "ignore": "Yoksay (oturum)"
+  },
+  "fileWatcher": {
+    "externalChange": "Dosya dışarıda değişti. Diskten yeniden yüklensin mi? (Yerel değişiklikler kaybolacak.)"
+  },
+  "recovery": {
+    "prompt": "{{label}} için kaydedilmemiş değişiklikler bulundu ({{when}}). Geri yüklensin mi?"
+  },
+  "updater": {
+    "prompt": "Yeni sürüm: v{{version}}\n{{body}}\n\nŞimdi indirilip kurulsun mu? (Uygulama yeniden başlatılacak.)"
+  }
+}

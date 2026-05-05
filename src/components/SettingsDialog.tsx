@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   type Settings,
   type SettingsApi,
@@ -40,6 +41,7 @@ function findPresetIndex(value: string): number {
 }
 
 export function SettingsDialog({ open, api, onClose }: Props) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("appearance");
   const [paths, setPaths] = useState<ConfigPaths | null>(null);
 
@@ -70,6 +72,7 @@ export function SettingsDialog({ open, api, onClose }: Props) {
     updateAppearance,
     updateFiles,
     updateSpellcheck,
+    updateApp,
     reset,
   } = api;
 
@@ -83,27 +86,49 @@ export function SettingsDialog({ open, api, onClose }: Props) {
         aria-labelledby="settings-title"
       >
         <header className="settings-header">
-          <h2 id="settings-title">Ayarlar</h2>
+          <h2 id="settings-title">{t("settings.title")}</h2>
           <button
             type="button"
             className="settings-close"
             onClick={onClose}
-            title="Kapat (Esc)"
+            title={`${t("common.close")} (Esc)`}
           >
             ×
           </button>
         </header>
         <nav className="settings-tabs">
-          <TabButton id="appearance" label="Görünüm" tab={tab} setTab={setTab} />
-          <TabButton id="files" label="Dosya" tab={tab} setTab={setTab} />
-          <TabButton id="spellcheck" label="Yazım" tab={tab} setTab={setTab} />
-          <TabButton id="advanced" label="Gelişmiş" tab={tab} setTab={setTab} />
+          <TabButton
+            id="appearance"
+            label={t("settings.tabs.appearance")}
+            tab={tab}
+            setTab={setTab}
+          />
+          <TabButton
+            id="files"
+            label={t("settings.tabs.files")}
+            tab={tab}
+            setTab={setTab}
+          />
+          <TabButton
+            id="spellcheck"
+            label={t("settings.tabs.spellcheck")}
+            tab={tab}
+            setTab={setTab}
+          />
+          <TabButton
+            id="advanced"
+            label={t("settings.tabs.advanced")}
+            tab={tab}
+            setTab={setTab}
+          />
         </nav>
         <div className="settings-body">
           {tab === "appearance" ? (
             <AppearanceTab
               settings={settings.appearance}
               update={updateAppearance}
+              appLanguage={settings.app.language}
+              updateApp={updateApp}
             />
           ) : null}
           {tab === "files" ? (
@@ -122,18 +147,17 @@ export function SettingsDialog({ open, api, onClose }: Props) {
             type="button"
             className="settings-btn-secondary"
             onClick={() => {
-              if (window.confirm("Tüm ayarlar varsayılana dönecek. Devam?"))
-                reset();
+              if (window.confirm(t("settings.footer.resetConfirm"))) reset();
             }}
           >
-            Varsayılana Sıfırla
+            {t("settings.footer.reset")}
           </button>
           <button
             type="button"
             className="settings-btn-primary"
             onClick={onClose}
           >
-            Kapat
+            {t("common.close")}
           </button>
         </footer>
       </div>
@@ -166,14 +190,33 @@ function TabButton({
 function AppearanceTab({
   settings,
   update,
+  appLanguage,
+  updateApp,
 }: {
   settings: Settings["appearance"];
   update: (patch: Partial<Settings["appearance"]>) => void;
+  appLanguage: Settings["app"]["language"];
+  updateApp: (patch: Partial<Settings["app"]>) => void;
 }) {
+  const { t } = useTranslation();
   const presetIndex = findPresetIndex(settings.fontFamily);
   return (
     <>
-      <Field label="Font ailesi (hazır)">
+      <Field label={t("settings.appearance.language")}>
+        <select
+          value={appLanguage}
+          onChange={(e) =>
+            updateApp({
+              language: e.target.value as Settings["app"]["language"],
+            })
+          }
+        >
+          <option value="tr">{t("settings.appearance.languageTr")}</option>
+          <option value="en">{t("settings.appearance.languageEn")}</option>
+        </select>
+      </Field>
+      <p className="settings-hint">{t("settings.appearance.languageHint")}</p>
+      <Field label={t("settings.appearance.fontPreset")}>
         <select
           value={presetIndex >= 0 ? String(presetIndex) : "custom"}
           onChange={(e) => {
@@ -188,18 +231,20 @@ function AppearanceTab({
               {p.label}
             </option>
           ))}
-          <option value="custom">— Özel —</option>
+          <option value="custom">— Custom —</option>
         </select>
       </Field>
-      <Field label="Font ailesi (CSS)">
+      <Field label={t("settings.appearance.fontCustom")}>
         <input
           type="text"
           value={settings.fontFamily}
           onChange={(e) => update({ fontFamily: e.target.value })}
-          placeholder="örn. Inter, system-ui, sans-serif"
+          placeholder={t("settings.appearance.fontPlaceholder")}
         />
       </Field>
-      <Field label={`Font boyutu — ${settings.fontSize}px`}>
+      <Field
+        label={t("settings.appearance.fontSize", { size: settings.fontSize })}
+      >
         <input
           type="range"
           min={10}
@@ -208,7 +253,11 @@ function AppearanceTab({
           onChange={(e) => update({ fontSize: Number(e.target.value) })}
         />
       </Field>
-      <Field label={`Satır yüksekliği — ${settings.lineHeight.toFixed(2)}`}>
+      <Field
+        label={t("settings.appearance.lineHeight", {
+          value: settings.lineHeight.toFixed(2),
+        })}
+      >
         <input
           type="range"
           min={1.2}
@@ -218,7 +267,11 @@ function AppearanceTab({
           onChange={(e) => update({ lineHeight: Number(e.target.value) })}
         />
       </Field>
-      <Field label={`Editör genişliği — ${settings.editorWidth}px`}>
+      <Field
+        label={t("settings.appearance.editorWidth", {
+          value: settings.editorWidth,
+        })}
+      >
         <input
           type="range"
           min={520}
@@ -239,10 +292,13 @@ function FilesTab({
   settings: Settings["files"];
   update: (patch: Partial<Settings["files"]>) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       <Field
-        label={`Otomatik kaydetme gecikmesi — ${(settings.autoSaveMs / 1000).toFixed(1)}s`}
+        label={t("settings.files.autoSaveDelay", {
+          seconds: (settings.autoSaveMs / 1000).toFixed(1),
+        })}
       >
         <input
           type="range"
@@ -253,12 +309,11 @@ function FilesTab({
           onChange={(e) => update({ autoSaveMs: Number(e.target.value) })}
         />
       </Field>
-      <p className="settings-hint">
-        Düzenleme durduktan sonra dosyaya yazılana kadar geçen süre
-        (yalnızca diske kaydedilmiş dosyalar).
-      </p>
+      <p className="settings-hint">{t("settings.files.autoSaveHint")}</p>
       <Field
-        label={`Kurtarma anlık görüntüsü gecikmesi — ${(settings.recoveryMs / 1000).toFixed(1)}s`}
+        label={t("settings.files.recoveryDelay", {
+          seconds: (settings.recoveryMs / 1000).toFixed(1),
+        })}
       >
         <input
           type="range"
@@ -269,9 +324,7 @@ function FilesTab({
           onChange={(e) => update({ recoveryMs: Number(e.target.value) })}
         />
       </Field>
-      <p className="settings-hint">
-        Kaydedilmemiş içerik için kurtarma dosyasına yazma sıklığı.
-      </p>
+      <p className="settings-hint">{t("settings.files.recoveryHint")}</p>
     </>
   );
 }
@@ -283,9 +336,10 @@ function SpellcheckTab({
   settings: Settings["spellcheck"];
   update: (patch: Partial<Settings["spellcheck"]>) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
-      <Field label="Yazım denetimi dili">
+      <Field label={t("settings.spellcheck.language")}>
         <select
           value={settings.language}
           onChange={(e) =>
@@ -294,34 +348,28 @@ function SpellcheckTab({
             })
           }
         >
-          <option value="off">Kapalı</option>
-          <option value="en">İngilizce</option>
-          <option value="tr">Türkçe</option>
+          <option value="off">{t("settings.spellcheck.off")}</option>
+          <option value="en">{t("settings.spellcheck.en")}</option>
+          <option value="tr">{t("settings.spellcheck.tr")}</option>
         </select>
       </Field>
-      <p className="settings-hint">
-        Türkçe sözlüğü ilk seçildiğinde yaklaşık 9 MB sözlük indirilir;
-        bir sonraki açılışta önbellekten gelir. Kod blokları, matematik,
-        bağlantılar ve emoji'ler atlanır.
-      </p>
+      <p className="settings-hint">{t("settings.spellcheck.hint")}</p>
     </>
   );
 }
 
 function AdvancedTab({ paths }: { paths: ConfigPaths | null }) {
+  const { t } = useTranslation();
   return (
     <div className="settings-advanced">
-      <p className="settings-hint">
-        Gelişmiş ayarlar JSON / CSS dosyaları üzerinden yönetilir.
-        Düzenleyince uygulamayı yeniden başlatın.
-      </p>
+      <p className="settings-hint">{t("settings.advanced.intro")}</p>
       <div className="settings-row">
         <button
           type="button"
           className="settings-btn-secondary"
           onClick={() => void openUserConfig()}
         >
-          Konfig dosyasını aç (conf.user.json)
+          {t("settings.advanced.openConfig")}
         </button>
         {paths ? (
           <code className="settings-path" title={paths.userConfigFile}>
@@ -335,7 +383,7 @@ function AdvancedTab({ paths }: { paths: ConfigPaths | null }) {
           className="settings-btn-secondary"
           onClick={() => void openThemesDir()}
         >
-          Tema klasörünü aç (themes/custom.css)
+          {t("settings.advanced.openThemes")}
         </button>
         {paths ? (
           <code className="settings-path" title={paths.themesDir}>

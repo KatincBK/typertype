@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { suggestWord } from "@/lib/spellChecker";
 
 interface Props {
@@ -26,6 +27,7 @@ export function SpellMenu({
   onIgnore,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const suggestions = useMemo(() => {
@@ -71,7 +73,7 @@ export function SpellMenu({
     >
       <div className="spell-menu-header">{word}</div>
       {suggestions.length === 0 ? (
-        <div className="spell-menu-empty">Öneri yok</div>
+        <div className="spell-menu-empty">{t("spell.noSuggestions")}</div>
       ) : (
         suggestions.map((s) => (
           <button
@@ -98,7 +100,7 @@ export function SpellMenu({
           onClose();
         }}
       >
-        Sözlüğe ekle
+        {t("spell.addToDict")}
       </button>
       <button
         type="button"
@@ -109,7 +111,7 @@ export function SpellMenu({
           onClose();
         }}
       >
-        Yoksay (oturum)
+        {t("spell.ignore")}
       </button>
     </div>
   );

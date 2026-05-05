@@ -41,8 +41,37 @@ function parseHtmlImgAttrs(raw: string): Record<string, string> {
   return out;
 }
 
+function buildImageToken(attrs: Record<string, string>): Token | null {
+  if (!attrs.src) return null;
+  const style = attrs.style || "";
+  const zoom = style.match(/zoom\s*:\s*([^;]+?)\s*(;|$)/i)?.[1];
+  const width = zoom?.trim() || attrs.width || null;
+  let align: string | null = null;
+  if (/float\s*:\s*left/i.test(style)) align = "left";
+  else if (/float\s*:\s*right/i.test(style)) align = "right";
+  else if (/margin\s*:\s*0\s*auto/i.test(style)) align = "center";
+  else if (
+    attrs.align === "left" ||
+    attrs.align === "right" ||
+    attrs.align === "center"
+  )
+    align = attrs.align;
+
+  const imgTok = new Token("image", "img", 0);
+  imgTok.attrs = [["src", attrs.src]];
+  if (attrs.title) imgTok.attrs.push(["title", attrs.title]);
+  if (width) imgTok.attrs.push(["width", width]);
+  if (align) imgTok.attrs.push(["align", align]);
+  const altTok = new Token("text", "", 0);
+  altTok.content = attrs.alt || "";
+  imgTok.children = [altTok];
+  imgTok.content = attrs.alt || "";
+  return imgTok;
+}
+
 function htmlImgPlugin(md: MarkdownIt) {
   md.core.ruler.after("inline", "html_img_to_image", (state) => {
+    // Pass 1: html_inline within an inline token → swap to image token.
     for (const tok of state.tokens) {
       if (tok.type !== "inline" || !tok.children) continue;
       for (let i = 0; i < tok.children.length; i++) {
@@ -50,33 +79,32 @@ function htmlImgPlugin(md: MarkdownIt) {
         if (c.type !== "html_inline") continue;
         const m = c.content.match(IMG_TAG_RE);
         if (!m) continue;
-        const attrs = parseHtmlImgAttrs(m[1]);
-        if (!attrs.src) continue;
-        const style = attrs.style || "";
-        const zoom = style.match(/zoom\s*:\s*([^;]+?)\s*(;|$)/i)?.[1];
-        const width = zoom?.trim() || attrs.width || null;
-        let align: string | null = null;
-        if (/float\s*:\s*left/i.test(style)) align = "left";
-        else if (/float\s*:\s*right/i.test(style)) align = "right";
-        else if (/margin\s*:\s*0\s*auto/i.test(style)) align = "center";
-        else if (
-          attrs.align === "left" ||
-          attrs.align === "right" ||
-          attrs.align === "center"
-        )
-          align = attrs.align;
-
-        const imgTok = new Token("image", "img", 0);
-        imgTok.attrs = [["src", attrs.src]];
-        if (attrs.title) imgTok.attrs.push(["title", attrs.title]);
-        if (width) imgTok.attrs.push(["width", width]);
-        if (align) imgTok.attrs.push(["align", align]);
-        const altTok = new Token("text", "", 0);
-        altTok.content = attrs.alt || "";
-        imgTok.children = [altTok];
-        imgTok.content = attrs.alt || "";
-        tok.children[i] = imgTok;
+        const imgTok = buildImageToken(parseHtmlImgAttrs(m[1]));
+        if (imgTok) tok.children[i] = imgTok;
       }
+    }
+    // Pass 2: top-level html_block containing only an <img> tag (this
+    // is what markdown-it produces when the serializer round-trips an
+    // aligned / sized image as the sole content of a paragraph). Wrap
+    // it in paragraph_open/inline/paragraph_close so the parser sees a
+    // normal inline image node.
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      if (tok.type !== "html_block") continue;
+      const trimmed = tok.content.trim();
+      const m = trimmed.match(IMG_TAG_RE);
+      if (!m) continue;
+      const imgTok = buildImageToken(parseHtmlImgAttrs(m[1]));
+      if (!imgTok) continue;
+
+      const open = new Token("paragraph_open", "p", 1);
+      const inline = new Token("inline", "", 0);
+      inline.children = [imgTok];
+      inline.content = imgTok.content;
+      const close = new Token("paragraph_close", "p", -1);
+      tokens.splice(i, 1, open, inline, close);
+      i += 2; // skip the tokens we just inserted
     }
   });
 }

@@ -24,8 +24,11 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+
+    /* Globals for vitest's `describe`/`it`/`expect`/`vi` (used in test/) */
+    "types": ["vitest/globals"]
   },
-  "include": ["src"],
+  "include": ["src", "test"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

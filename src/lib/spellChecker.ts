@@ -1,10 +1,15 @@
 import nspell from "nspell";
 import { logger } from "./logger";
 
-import enAffUrl from "dictionary-en/index.aff?url";
-import enDicUrl from "dictionary-en/index.dic?url";
-import trAffUrl from "dictionary-tr/index.aff?url";
-import trDicUrl from "dictionary-tr/index.dic?url";
+// dictionary-en/-tr's package.json `exports` field only exposes index.js,
+// which means `dictionary-en/index.aff?url` fails to resolve. Reach the
+// raw asset via a relative path into node_modules instead — Vite's
+// `?url` plugin treats this as a file-system asset import (no package
+// resolution), so it bypasses the `exports` restriction.
+import enAffUrl from "../../node_modules/dictionary-en/index.aff?url";
+import enDicUrl from "../../node_modules/dictionary-en/index.dic?url";
+import trAffUrl from "../../node_modules/dictionary-tr/index.aff?url";
+import trDicUrl from "../../node_modules/dictionary-tr/index.dic?url";
 
 // FAZ 18 — Pure-JS Hunspell port. Dictionaries are pulled in via
 // Vite's `?url` so the .dic / .aff blobs only download on first use of

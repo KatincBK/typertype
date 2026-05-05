@@ -32,6 +32,9 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
+      - name: Unit tests
+        run: npm run test:run
+
       - name: Tauri build (MSI + NSIS)
         run: npm run tauri build
 

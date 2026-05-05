@@ -1,8 +1,13 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use tauri::{Manager, State};
+use std::sync::Mutex;
+use tauri::{Emitter, Manager, State};
 use tracing_subscriber::EnvFilter;
+
+use notify::{
+    event::EventKind, recommended_watcher, RecommendedWatcher, RecursiveMode, Watcher,
+};
 
 // MVP-9 — initial CLI args. When the user double-clicks a .md file or
 // runs `tylike <path>` from a shell, the OS launches us with the path as
@@ -509,6 +514,98 @@ fn read_entry(path: &Path) -> std::io::Result<FileEntry> {
     }
 }
 
+// FAZ 7 — file watcher. We watch the *parent directory* (not the file
+// itself) because most editors save by writing to a tmp file and renaming
+// over the original — file-level watches miss the rename, but a dir-level
+// watch sees the create/modify on the final path. The handler filters
+// down to events whose path matches the file we care about.
+//
+// State is a single-slot Mutex<Option<RecommendedWatcher>>: each
+// watch_file call replaces (and drops) the previous watcher, so when the
+// user opens a different doc we automatically stop watching the old one.
+
+struct WatcherState(Mutex<Option<RecommendedWatcher>>);
+
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FileChangedPayload {
+    path: String,
+    content: Option<String>,
+    error: Option<String>,
+}
+
+#[tauri::command]
+fn watch_file(
+    app: tauri::AppHandle,
+    state: State<'_, WatcherState>,
+    path: String,
+) -> Result<(), String> {
+    let target = PathBuf::from(&path);
+    if !target.exists() {
+        return Err(format!("Yol yok: {}", path));
+    }
+    let parent = target
+        .parent()
+        .ok_or_else(|| "Yol üst klasörü yok".to_string())?
+        .to_path_buf();
+    let target_for_handler = target.clone();
+    let path_str = path.clone();
+
+    let mut watcher = recommended_watcher(move |res: notify::Result<notify::Event>| {
+        let event = match res {
+            Ok(ev) => ev,
+            Err(e) => {
+                tracing::warn!("watcher error: {}", e);
+                return;
+            }
+        };
+        // Only react to mutations — Access events would fire on every
+        // open the editor performs and there's nothing to surface.
+        let interesting = matches!(
+            event.kind,
+            EventKind::Modify(_) | EventKind::Create(_) | EventKind::Remove(_)
+        );
+        if !interesting {
+            return;
+        }
+        let touched = event.paths.iter().any(|p| p == &target_for_handler);
+        if !touched {
+            return;
+        }
+        let payload = match std::fs::read_to_string(&target_for_handler) {
+            Ok(content) => FileChangedPayload {
+                path: path_str.clone(),
+                content: Some(content),
+                error: None,
+            },
+            Err(e) => FileChangedPayload {
+                path: path_str.clone(),
+                content: None,
+                error: Some(e.to_string()),
+            },
+        };
+        if let Err(err) = app.emit("tylike://file-changed", payload) {
+            tracing::warn!("emit file-changed failed: {}", err);
+        }
+    })
+    .map_err(|e| format!("watcher init: {}", e))?;
+
+    watcher
+        .watch(&parent, RecursiveMode::NonRecursive)
+        .map_err(|e| format!("watch {}: {}", parent.display(), e))?;
+
+    let mut guard = state.0.lock().map_err(|e| format!("lock: {}", e))?;
+    *guard = Some(watcher); // dropping any previous watcher stops it
+    Ok(())
+}
+
+#[tauri::command]
+fn unwatch_file(state: State<'_, WatcherState>) -> Result<(), String> {
+    let mut guard = state.0.lock().map_err(|e| format!("lock: {}", e))?;
+    *guard = None;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tracing_subscriber::fmt()
@@ -533,6 +630,7 @@ pub fn run() {
         .manage(InitialArgs {
             file: initial_file,
         })
+        .manage(WatcherState(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             greet,
             read_user_config,
@@ -555,6 +653,8 @@ pub fn run() {
             pick_image_dialog,
             copy_image_to_assets,
             write_image_bytes,
+            watch_file,
+            unwatch_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

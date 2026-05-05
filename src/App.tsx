@@ -38,6 +38,13 @@ import { checkPandoc, exportViaPandoc } from "@/lib/exportPandoc";
 import { useSettings } from "@/lib/settings";
 import { getInitialArgs } from "@/lib/launchArgs";
 import { checkForUpdate } from "@/lib/updater";
+import {
+  onFileChanged,
+  unwatchFile,
+  watchFile,
+  type FileChangedPayload,
+} from "@/lib/fileWatcher";
+import type { UnlistenFn } from "@tauri-apps/api/event";
 import { Sidebar } from "@/components/Sidebar";
 import { FindBar } from "@/components/FindBar";
 import { ExportMenu, type ExportFormat } from "@/components/ExportMenu";
@@ -507,6 +514,67 @@ function App() {
     }
     window.addEventListener("blur", onBlur);
     return () => window.removeEventListener("blur", onBlur);
+  }, []);
+
+  // FAZ 7 — watch the active file on disk so external edits surface in
+  // the editor. Mirror the latest doc state into a ref so the bound
+  // listener (registered once) sees fresh values without re-binding.
+  const watchStateRef = useRef({ filePath, savedMd, currentMd });
+  watchStateRef.current = { filePath, savedMd, currentMd };
+
+  useEffect(() => {
+    if (!filePath) {
+      void unwatchFile();
+      return;
+    }
+    void watchFile(filePath);
+    return () => {
+      // Don't unwatch on rerun — the next watchFile() call replaces the
+      // active watcher in Rust. Only unwatch when the file goes away.
+    };
+  }, [filePath]);
+
+  useEffect(() => {
+    let unlisten: UnlistenFn | undefined;
+    let cancelled = false;
+    void onFileChanged((payload: FileChangedPayload) => {
+      const s = watchStateRef.current;
+      if (!s.filePath || payload.path !== s.filePath) return;
+      if (payload.error || payload.content === null) {
+        // File was deleted or unreadable — surface it but don't try to
+        // overwrite the editor with empty content.
+        return;
+      }
+      const incoming = payload.content;
+      // Filter our own writes: when we just saved, the disk content
+      // matches what we have in memory.
+      if (incoming === s.savedMd) return;
+      const dirty = s.currentMd !== s.savedMd;
+      if (dirty) {
+        const ok = window.confirm(
+          "Dosya dışarıda değişti. Diskten yeniden yüklensin mi? (Yerel değişiklikler kaybolacak.)",
+        );
+        if (!ok) {
+          // Keep local edits but mark as dirty against the new disk
+          // baseline so the next save knows it's overwriting.
+          setSavedMd(incoming);
+          return;
+        }
+      }
+      setLoadedMd(incoming);
+      setSavedMd(incoming);
+      setCurrentMd(incoming);
+    }).then((fn) => {
+      if (cancelled) {
+        fn();
+      } else {
+        unlisten = fn;
+      }
+    });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
   }, []);
 
   // FAZ 11 follow-up — listen for image events bubbled from NodeView.

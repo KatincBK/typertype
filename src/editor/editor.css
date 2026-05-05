@@ -217,19 +217,143 @@
 
 /* ---------- Images (FAZ 11) ---------- */
 
+.editor .ProseMirror .image-wrapper {
+  display: inline-block;
+  position: relative;
+  line-height: 0;
+  max-width: 100%;
+}
+
+.editor .ProseMirror .image-wrapper.align-left {
+  float: left;
+  margin: 0.4em 1em 0.4em 0;
+}
+
+.editor .ProseMirror .image-wrapper.align-right {
+  float: right;
+  margin: 0.4em 0 0.4em 1em;
+}
+
+.editor .ProseMirror .image-wrapper.align-center {
+  display: block;
+  margin: 0.4em auto;
+  text-align: center;
+}
+
 .editor .ProseMirror img.doc-image {
   max-width: 100%;
   height: auto;
   border-radius: 3px;
   vertical-align: middle;
+  display: inline-block;
 }
 
+.editor .ProseMirror .image-wrapper.doc-image-broken img.doc-image,
 .editor .ProseMirror img.doc-image-broken {
   min-width: 100px;
   min-height: 60px;
   background: var(--bg-soft);
   border: 1px dashed var(--border);
   position: relative;
+}
+
+/* Selection ring + the controls overlay only show when the image node
+ * is selected (NodeSelection). ProseMirror sets a default outline on
+ * .ProseMirror-selectednode, which we tone down in favour of our own. */
+.editor .ProseMirror .image-wrapper.selected img.doc-image {
+  outline: 2px solid var(--accent, #4a90e2);
+  outline-offset: 1px;
+}
+
+.editor .ProseMirror .image-wrapper .image-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease-in-out;
+}
+
+.editor .ProseMirror .image-wrapper:hover .image-controls,
+.editor .ProseMirror .image-wrapper.selected .image-controls {
+  opacity: 1;
+}
+
+.editor .ProseMirror .image-wrapper .image-controls > * {
+  pointer-events: auto;
+}
+
+.editor .ProseMirror .image-popover {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 5px;
+  background: var(--bg-elevated, #fff);
+  border: 1px solid var(--border, #ccc);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+.editor .ProseMirror .image-popover-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border, #ccc);
+  margin: 0 3px;
+}
+
+.editor .ProseMirror .image-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  min-width: 22px;
+  height: 22px;
+}
+
+.editor .ProseMirror .image-btn:hover {
+  background: var(--bg-soft);
+  border-color: var(--border);
+}
+
+.editor .ProseMirror .image-resize-handle {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  background: var(--accent, #4a90e2);
+  border: 2px solid var(--bg, #fff);
+  border-radius: 2px;
+  cursor: se-resize;
+  z-index: 4;
+}
+
+.editor .ProseMirror .image-width-label {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  padding: 1px 5px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.editor .ProseMirror .image-wrapper:not(.has-width) .image-width-label {
+  display: none;
 }
 
 /* ---------- Tables ---------- */

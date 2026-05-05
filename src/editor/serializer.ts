@@ -4,6 +4,7 @@ import {
   defaultMarkdownSerializer,
 } from "prosemirror-markdown";
 import MarkdownIt from "markdown-it";
+import Token from "markdown-it/lib/token.mjs";
 import markdownitMark from "markdown-it-mark";
 import markdownitSub from "markdown-it-sub";
 import markdownitSup from "markdown-it-sup";
@@ -23,6 +24,63 @@ function listIsTight(tokens: readonly { type: string; hidden?: boolean }[], i: n
   return false;
 }
 
+// FAZ 11 follow-up — Typora persists resized / aligned images as raw
+// <img> tags inside markdown. With md.html=true those come through as
+// `html_inline` tokens; we rewrite them to first-class `image` tokens so
+// the existing image parser rule sees src/alt/title plus width/align.
+const IMG_TAG_RE = /^<img\b([^>]*?)\/?>$/i;
+const ATTR_RE = /([a-zA-Z_:][a-zA-Z0-9_:.\-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>=`]+))/g;
+
+function parseHtmlImgAttrs(raw: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  let m: RegExpExecArray | null;
+  ATTR_RE.lastIndex = 0;
+  while ((m = ATTR_RE.exec(raw)) !== null) {
+    out[m[1].toLowerCase()] = m[2] ?? m[3] ?? m[4] ?? "";
+  }
+  return out;
+}
+
+function htmlImgPlugin(md: MarkdownIt) {
+  md.core.ruler.after("inline", "html_img_to_image", (state) => {
+    for (const tok of state.tokens) {
+      if (tok.type !== "inline" || !tok.children) continue;
+      for (let i = 0; i < tok.children.length; i++) {
+        const c = tok.children[i];
+        if (c.type !== "html_inline") continue;
+        const m = c.content.match(IMG_TAG_RE);
+        if (!m) continue;
+        const attrs = parseHtmlImgAttrs(m[1]);
+        if (!attrs.src) continue;
+        const style = attrs.style || "";
+        const zoom = style.match(/zoom\s*:\s*([^;]+?)\s*(;|$)/i)?.[1];
+        const width = zoom?.trim() || attrs.width || null;
+        let align: string | null = null;
+        if (/float\s*:\s*left/i.test(style)) align = "left";
+        else if (/float\s*:\s*right/i.test(style)) align = "right";
+        else if (/margin\s*:\s*0\s*auto/i.test(style)) align = "center";
+        else if (
+          attrs.align === "left" ||
+          attrs.align === "right" ||
+          attrs.align === "center"
+        )
+          align = attrs.align;
+
+        const imgTok = new Token("image", "img", 0);
+        imgTok.attrs = [["src", attrs.src]];
+        if (attrs.title) imgTok.attrs.push(["title", attrs.title]);
+        if (width) imgTok.attrs.push(["width", width]);
+        if (align) imgTok.attrs.push(["align", align]);
+        const altTok = new Token("text", "", 0);
+        altTok.content = attrs.alt || "";
+        imgTok.children = [altTok];
+        imgTok.content = attrs.alt || "";
+        tok.children[i] = imgTok;
+      }
+    }
+  });
+}
+
 const md = MarkdownIt({ html: true })
   .use(markdownitMark)
   .use(markdownitSub)
@@ -30,7 +88,8 @@ const md = MarkdownIt({ html: true })
   .use(markdownitEmoji)
   .use(markdownitFootnote)
   .use(mathMarkdownItPlugin)
-  .use(tocMarkdownItPlugin);
+  .use(tocMarkdownItPlugin)
+  .use(htmlImgPlugin);
 
 // MVP-7 — render rules for HTML export. The editor side uses md.parse()
 // and feeds tokens into prosemirror-markdown, so adding renderer.rules is
@@ -118,6 +177,8 @@ const parser = new MarkdownParser(schema, md, {
       src: tok.attrGet("src") ?? "",
       title: tok.attrGet("title") ?? null,
       alt: tok.children?.[0]?.content ?? null,
+      width: tok.attrGet("width") ?? null,
+      align: tok.attrGet("align") ?? null,
     }),
   },
   hardbreak: { node: "hard_break" },
@@ -198,9 +259,46 @@ const parser = new MarkdownParser(schema, md, {
   sup: { mark: "superscript" },
 });
 
+function escapeHtmlAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
 const serializer = new MarkdownSerializer(
   {
     ...defaultMarkdownSerializer.nodes,
+    image: (state, node) => {
+      const { src, alt, title, width, align } = node.attrs as {
+        src: string;
+        alt: string | null;
+        title: string | null;
+        width: string | null;
+        align: "left" | "right" | "center" | null;
+      };
+      // No width / align → classic markdown form so plain consumers see
+      // a normal image. Anything fancier round-trips through HTML, which
+      // is what Typora writes too.
+      if (!width && !align) {
+        state.write(
+          "![" +
+            state.esc(alt || "") +
+            "](" +
+            state.esc(src) +
+            (title ? ` ${JSON.stringify(title)}` : "") +
+            ")",
+        );
+        return;
+      }
+      const parts = [`src="${escapeHtmlAttr(src)}"`];
+      if (alt) parts.push(`alt="${escapeHtmlAttr(alt)}"`);
+      if (title) parts.push(`title="${escapeHtmlAttr(title)}"`);
+      const styles: string[] = [];
+      if (width) styles.push(`zoom: ${width}`);
+      if (align === "left") styles.push("float: left");
+      else if (align === "right") styles.push("float: right");
+      else if (align === "center") styles.push("display: block; margin: 0 auto");
+      if (styles.length) parts.push(`style="${escapeHtmlAttr(styles.join("; "))};"`);
+      state.write(`<img ${parts.join(" ")} />`);
+    },
     math_inline: (state, node) => {
       state.write("$" + node.attrs.tex + "$");
     },

@@ -42,6 +42,12 @@ import { Sidebar } from "@/components/Sidebar";
 import { FindBar } from "@/components/FindBar";
 import { ExportMenu, type ExportFormat } from "@/components/ExportMenu";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { ImageAltDialog } from "@/components/ImageAltDialog";
+import { ImageLightbox } from "@/components/ImageLightbox";
+import type {
+  ImageAltEditDetail,
+  ImageLightboxDetail,
+} from "@/editor/imageView";
 import "./App.css";
 
 const SAMPLE_MARKDOWN = `# Tylike
@@ -176,6 +182,21 @@ function App() {
   // delays below)
   const settingsApi = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // FAZ 11 follow-up — image dialogs are driven by custom DOM events
+  // bubbled out of the ImageView NodeView. We hold the per-event commit
+  // callback in a ref because dialog state lives in React but the
+  // commit closure was captured at the time the event fired.
+  const [altDialog, setAltDialog] = useState<{
+    alt: string;
+    title: string;
+  } | null>(null);
+  const altCommitRef = useRef<((alt: string, title: string) => void) | null>(
+    null,
+  );
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(
+    null,
+  );
 
   const editorRef = useRef<EditorHandle>(null);
 
@@ -488,6 +509,25 @@ function App() {
     return () => window.removeEventListener("blur", onBlur);
   }, []);
 
+  // FAZ 11 follow-up — listen for image events bubbled from NodeView.
+  useEffect(() => {
+    function onAltEdit(e: Event) {
+      const detail = (e as CustomEvent<ImageAltEditDetail>).detail;
+      altCommitRef.current = detail.commit;
+      setAltDialog({ alt: detail.alt, title: detail.title });
+    }
+    function onLightbox(e: Event) {
+      const detail = (e as CustomEvent<ImageLightboxDetail>).detail;
+      setLightbox({ src: detail.src, alt: detail.alt });
+    }
+    document.addEventListener("tylike:image-alt-edit", onAltEdit);
+    document.addEventListener("tylike:image-lightbox", onLightbox);
+    return () => {
+      document.removeEventListener("tylike:image-alt-edit", onAltEdit);
+      document.removeEventListener("tylike:image-lightbox", onLightbox);
+    };
+  }, []);
+
   const openSettings = useCallback(() => setSettingsOpen(true), []);
   const insertImage = useCallback(
     () => editorRef.current?.insertImageFromDialog(),
@@ -653,6 +693,19 @@ function App() {
         open={settingsOpen}
         api={settingsApi}
         onClose={() => setSettingsOpen(false)}
+      />
+      <ImageAltDialog
+        open={altDialog !== null}
+        initialAlt={altDialog?.alt ?? ""}
+        initialTitle={altDialog?.title ?? ""}
+        onCommit={(alt, title) => altCommitRef.current?.(alt, title)}
+        onClose={() => setAltDialog(null)}
+      />
+      <ImageLightbox
+        open={lightbox !== null}
+        src={lightbox?.src ?? ""}
+        alt={lightbox?.alt ?? ""}
+        onClose={() => setLightbox(null)}
       />
     </div>
   );

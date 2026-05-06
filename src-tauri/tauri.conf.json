@@ -71,7 +71,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://example.invalid/tylike/{{target}}/{{current_version}}"
+        "https://github.com/tylike/tylike/releases/latest/download/latest.json"
       ],
       "pubkey": "REPLACE_WITH_BASE64_PUBKEY",
       "windows": {

@@ -6,6 +6,7 @@ import type {
   NodeView,
   ViewMutationRecord,
 } from "prosemirror-view";
+import i18n from "@/lib/i18n";
 
 // FAZ 11 follow-up — ImageView grew from a bare <img> NodeView into a
 // wrapper that owns selection, resize, alignment and dialog hooks. The
@@ -117,35 +118,54 @@ export class ImageView implements NodeView {
     const popover = document.createElement("span");
     popover.className = "image-popover";
 
+    // Vanilla DOM ⇒ no useTranslation hook; reach into the i18n
+    // singleton so language flips are still respected on next mount.
+    // Existing image popovers won't relabel mid-flight — acceptable
+    // since the user has to re-select the image after a language
+    // change anyway.
     popover.appendChild(
-      this.makeBtn("⯇", "Sola hizala", () => this.setAlign("left")),
+      this.makeBtn("⯇", i18n.t("image.popover.alignLeft"), () =>
+        this.setAlign("left"),
+      ),
     );
     popover.appendChild(
-      this.makeBtn("◉", "Ortala", () => this.setAlign("center")),
+      this.makeBtn("◉", i18n.t("image.popover.alignCenter"), () =>
+        this.setAlign("center"),
+      ),
     );
     popover.appendChild(
-      this.makeBtn("⯈", "Sağa hizala", () => this.setAlign("right")),
+      this.makeBtn("⯈", i18n.t("image.popover.alignRight"), () =>
+        this.setAlign("right"),
+      ),
     );
     popover.appendChild(
-      this.makeBtn("⌫", "Hizalamayı kaldır", () => this.setAlign(null)),
+      this.makeBtn("⌫", i18n.t("image.popover.alignClear"), () =>
+        this.setAlign(null),
+      ),
     );
     const sep = document.createElement("span");
     sep.className = "image-popover-sep";
     popover.appendChild(sep);
     popover.appendChild(
-      this.makeBtn("Aa", "Alt metnini düzenle", () => this.openAltDialog()),
+      this.makeBtn("Aa", i18n.t("image.popover.editAlt"), () =>
+        this.openAltDialog(),
+      ),
     );
     popover.appendChild(
-      this.makeBtn("⛶", "Tam ekran görüntüle", () => this.openLightbox()),
+      this.makeBtn("⛶", i18n.t("image.popover.fullscreen"), () =>
+        this.openLightbox(),
+      ),
     );
     popover.appendChild(
-      this.makeBtn("100%", "Orijinal boyut", () => this.setWidth(null)),
+      this.makeBtn("100%", i18n.t("image.popover.resetSize"), () =>
+        this.setWidth(null),
+      ),
     );
     this.controls.appendChild(popover);
 
     const handle = document.createElement("span");
     handle.className = "image-resize-handle";
-    handle.title = "Yeniden boyutlandır";
+    handle.title = i18n.t("image.resizeHandle");
     handle.addEventListener("mousedown", this.startResize);
     this.controls.appendChild(handle);
 

@@ -15,6 +15,9 @@ import { Plugin } from "prosemirror-state";
 import type { Command } from "prosemirror-state";
 import type { Node, Schema } from "prosemirror-model";
 import type { EditorView } from "prosemirror-view";
+import i18n from "@/lib/i18n";
+
+const t = (k: string) => i18n.t(k);
 
 // Adım 10 — GFM tables via prosemirror-tables.
 // `tableNodeSpecs` is destructured back to individual NodeSpecs so they can
@@ -108,13 +111,16 @@ class TableToolbarView {
       });
       this.toolbar.appendChild(btn);
     };
-    make("← Sütun", "Soluna sütun ekle", addColumnBefore);
-    make("Sütun →", "Sağına sütun ekle", addColumnAfter);
-    make("✕ Sütun", "Sütunu sil", deleteColumn);
-    make("↑ Satır", "Üstüne satır ekle", addRowBefore);
-    make("Satır ↓", "Altına satır ekle", addRowAfter);
-    make("✕ Satır", "Satırı sil", deleteRow);
-    make("✕ Tablo", "Tabloyu sil", deleteTable);
+    // Vanilla DOM toolbar — pull labels through the i18n singleton at
+    // construction time. Tables remount when the editor remounts (open
+    // a different doc), so a language switch flows through naturally.
+    make(t("table.labelColLeft"), t("table.colBefore"), addColumnBefore);
+    make(t("table.labelColRight"), t("table.colAfter"), addColumnAfter);
+    make(t("table.labelColDelete"), t("table.delCol"), deleteColumn);
+    make(t("table.labelRowUp"), t("table.rowBefore"), addRowBefore);
+    make(t("table.labelRowDown"), t("table.rowAfter"), addRowAfter);
+    make(t("table.labelRowDelete"), t("table.delRow"), deleteRow);
+    make(t("table.labelTableDelete"), t("table.delTable"), deleteTable);
   }
 
   update(view: EditorView) {

@@ -134,6 +134,25 @@
   "updater": {
     "prompt": "New version: v{{version}}\n{{body}}\n\nDownload and install now? (The app will restart.)"
   },
+  "table": {
+    "colBefore": "Insert column before",
+    "colAfter": "Insert column after",
+    "delCol": "Delete column",
+    "rowBefore": "Insert row above",
+    "rowAfter": "Insert row below",
+    "delRow": "Delete row",
+    "delTable": "Delete table",
+    "labelColLeft": "← Col",
+    "labelColRight": "Col →",
+    "labelColDelete": "✕ Col",
+    "labelRowUp": "↑ Row",
+    "labelRowDown": "Row ↓",
+    "labelRowDelete": "✕ Row",
+    "labelTableDelete": "✕ Table"
+  },
+  "commands": {
+    "linkPrompt": "Link URL:"
+  },
   "errors": {
     "openFile": "Could not open file: {{detail}}",
     "saveFile": "Could not save file: {{detail}}",

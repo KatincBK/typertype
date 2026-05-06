@@ -134,6 +134,25 @@
   "updater": {
     "prompt": "Yeni sürüm: v{{version}}\n{{body}}\n\nŞimdi indirilip kurulsun mu? (Uygulama yeniden başlatılacak.)"
   },
+  "table": {
+    "colBefore": "Soluna sütun ekle",
+    "colAfter": "Sağına sütun ekle",
+    "delCol": "Sütunu sil",
+    "rowBefore": "Üstüne satır ekle",
+    "rowAfter": "Altına satır ekle",
+    "delRow": "Satırı sil",
+    "delTable": "Tabloyu sil",
+    "labelColLeft": "← Sütun",
+    "labelColRight": "Sütun →",
+    "labelColDelete": "✕ Sütun",
+    "labelRowUp": "↑ Satır",
+    "labelRowDown": "Satır ↓",
+    "labelRowDelete": "✕ Satır",
+    "labelTableDelete": "✕ Tablo"
+  },
+  "commands": {
+    "linkPrompt": "Bağlantı URL'si:"
+  },
   "errors": {
     "openFile": "Dosya açılamadı: {{detail}}",
     "saveFile": "Dosya kaydedilemedi: {{detail}}",

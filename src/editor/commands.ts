@@ -4,6 +4,7 @@ import { setBlockType } from "prosemirror-commands";
 import { Fragment } from "prosemirror-model";
 import type { Schema } from "prosemirror-model";
 import { docToMarkdown } from "./serializer";
+import i18n from "@/lib/i18n";
 
 // Custom commands for Typora-parity shortcuts (Adım 4).
 // Stateless helpers receive the schema where needed and return a Command so
@@ -178,7 +179,7 @@ export const insertLink =
     const { from, to, empty } = state.selection;
     if (empty) return false;
     // MVP: window.prompt — gerçek modal Adım 13 sonrası UI fazında gelecek
-    const url = window.prompt("Bağlantı URL'si:");
+    const url = window.prompt(i18n.t("commands.linkPrompt"));
     if (!url) return true;
     if (dispatch) {
       dispatch(state.tr.addMark(from, to, linkType.create({ href: url })));

@@ -53,19 +53,19 @@ describe("serializer round-trip", () => {
     expect(out).toMatch(/\[\^1\]:/);
   });
 
-  it("round-trips a table to *some* table form", () => {
-    // Cell content survival is tracked separately — prosemirror-markdown
-    // discards the inline tokens when the cell schema demands block
-    // children, so values currently come out blank. We only assert
-    // here that the table structure still serialises (header + sep +
-    // body row count) without throwing.
+  it("preserves tables with cell content", () => {
     const md = "| a | b |\n| --- | --- |\n| 1 | 2 |";
     const out = roundTrip(md);
-    const lines = out.trim().split("\n");
-    expect(lines).toHaveLength(3);
-    for (const line of lines) {
-      expect(line.startsWith("|")).toBe(true);
-    }
+    expect(out).toContain("| a | b |");
+    expect(out).toContain("| 1 | 2 |");
+  });
+
+  it("preserves table cells that contain inline marks", () => {
+    const md =
+      "| name | value |\n| --- | --- |\n| **bold** | `code` |";
+    const out = roundTrip(md);
+    expect(out).toContain("**bold**");
+    expect(out).toContain("`code`");
   });
 
   it("emits plain markdown for an image with no width / align", () => {

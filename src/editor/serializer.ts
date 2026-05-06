@@ -109,6 +109,38 @@ function htmlImgPlugin(md: MarkdownIt) {
   });
 }
 
+// FAZ 22 follow-up — table cells. The prosemirror-tables schema declares
+// table_cell / table_header as `block+`, but markdown-it emits a bare
+// `inline` token for cell content (no paragraph wrap). prosemirror-
+// markdown silently drops inline-into-block insertions, leaving cells
+// empty after a round-trip. We wrap each inline token between th/td
+// open/close with paragraph_open / paragraph_close so the parser sees
+// the well-formed shape the schema expects.
+function wrapTableCellsPlugin(md: MarkdownIt) {
+  md.core.ruler.after("inline", "wrap_table_cell_inline", (state) => {
+    const tokens = state.tokens;
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      if (tok.type !== "th_open" && tok.type !== "td_open") continue;
+      // Walk forward to the matching close, wrapping any inline we
+      // encounter. There's normally only one inline per cell, but
+      // protecting against zero or multiple costs nothing.
+      const closeType = tok.type === "th_open" ? "th_close" : "td_close";
+      for (let j = i + 1; j < tokens.length; j++) {
+        if (tokens[j].type === closeType) break;
+        if (tokens[j].type !== "inline") continue;
+        const open = new Token("paragraph_open", "p", 1);
+        open.hidden = true; // tight: don't emit a blank line on render
+        const close = new Token("paragraph_close", "p", -1);
+        close.hidden = true;
+        tokens.splice(j, 0, open);
+        tokens.splice(j + 2, 0, close);
+        j += 2;
+      }
+    }
+  });
+}
+
 const md = MarkdownIt({ html: true })
   .use(markdownitMark)
   .use(markdownitSub)
@@ -117,7 +149,8 @@ const md = MarkdownIt({ html: true })
   .use(markdownitFootnote)
   .use(mathMarkdownItPlugin)
   .use(tocMarkdownItPlugin)
-  .use(htmlImgPlugin);
+  .use(htmlImgPlugin)
+  .use(wrapTableCellsPlugin);
 
 // MVP-7 — render rules for HTML export. The editor side uses md.parse()
 // and feeds tokens into prosemirror-markdown, so adding renderer.rules is
@@ -362,7 +395,7 @@ const serializer = new MarkdownSerializer(
       state.closeBlock(node);
     },
     table: (state, node) => {
-      state.write(serializeTable(node));
+      state.write(serializeTable(node, state));
       state.closeBlock(node);
     },
     table_row: () => {

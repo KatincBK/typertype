@@ -160,15 +160,43 @@ export function buildTableToolbarPlugin(): Plugin {
 
 // Helper for the markdown serializer to emit a GFM table. Mirrors the
 // rendering of `defaultMarkdownSerializer.nodes.table` (which doesn't
-// exist) by reading the prosemirror-tables shape directly.
-export function serializeTable(node: Node): string {
+// exist) by reading the prosemirror-tables shape directly. We borrow
+// the host MarkdownSerializerState so each cell goes through the same
+// mark / escape rules as the rest of the doc — using cell.textContent
+// here would silently drop bold/italic/code/link inside cells.
+import type { MarkdownSerializerState } from "prosemirror-markdown";
+
+export function serializeTable(
+  node: Node,
+  state: MarkdownSerializerState,
+): string {
   const rows: string[][] = [];
   const aligns: Array<string | null> = [];
+
+  // state.out is the running buffer the serializer writes into. The
+  // public typings hide this field (it's marked internal) but the
+  // class exposes it at runtime — every prosemirror-markdown table
+  // helper in the wild reaches for it the same way. We capture its
+  // length, let renderInline append the cell's inline markdown, then
+  // slice off the appended fragment and truncate the buffer back so
+  // the table prelude doesn't leak any cell text into the doc.
+  const stateOut = state as unknown as { out: string };
+  const renderInline = (cell: Node): string => {
+    const para = cell.firstChild;
+    if (!para || !para.isTextblock) return "";
+    const before = stateOut.out.length;
+    state.renderInline(para);
+    const rendered = stateOut.out.slice(before);
+    stateOut.out = stateOut.out.slice(0, before);
+    return rendered;
+  };
 
   node.forEach((row, _rowOffset, rowIndex) => {
     const cells: string[] = [];
     row.forEach((cell, _cellOffset, cellIndex) => {
-      const cellText = cell.textContent.replace(/\|/g, "\\|").trim() || " ";
+      const raw = renderInline(cell);
+      const cellText =
+        raw.replace(/\|/g, "\\|").replace(/\n/g, " ").trim() || " ";
       cells.push(cellText);
       if (rowIndex === 0) {
         aligns[cellIndex] = (cell.attrs as { align?: string }).align ?? null;

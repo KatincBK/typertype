@@ -36,9 +36,10 @@ const OPTIONS: Option[] = [
 
 interface Props {
   onExport: (format: ExportFormat) => void;
+  onPrint: () => void;
 }
 
-export function ExportMenu({ onExport }: Props) {
+export function ExportMenu({ onExport, onPrint }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,6 +71,19 @@ export function ExportMenu({ onExport }: Props) {
       </button>
       {open ? (
         <div className="export-menu-dropdown" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            className="export-menu-item"
+            onClick={() => {
+              setOpen(false);
+              onPrint();
+            }}
+          >
+            <span className="export-menu-label">{t("export.print")}</span>
+            <span className="export-menu-hint">Ctrl+P</span>
+          </button>
+          <div className="export-menu-sep" />
           {OPTIONS.map((opt) => (
             <button
               key={opt.id}

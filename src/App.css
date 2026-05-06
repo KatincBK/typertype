@@ -385,6 +385,12 @@ body,
   background: var(--bg-hover);
 }
 
+.export-menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
 .export-menu-label {
   white-space: nowrap;
 }

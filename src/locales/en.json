@@ -33,6 +33,7 @@
   },
   "export": {
     "menuTitle": "Export",
+    "print": "Print…",
     "htmlStyled": "HTML (styled)",
     "htmlPlain": "HTML (plain)",
     "docx": "Word (.docx)",

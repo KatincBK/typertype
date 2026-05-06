@@ -42,6 +42,7 @@ import { getInitialArgs } from "@/lib/launchArgs";
 import { checkForUpdate } from "@/lib/updater";
 import { addUserWord, ignoreWord, setSpellLanguage } from "@/lib/spellChecker";
 import { loadUserDict, persistUserDict } from "@/lib/userDict";
+import { printDocument } from "@/lib/print";
 import { SpellMenu } from "@/components/SpellMenu";
 import type { SpellContextDetail } from "@/editor/spell";
 import {
@@ -676,6 +677,15 @@ function App() {
     () => editorRef.current?.insertImageFromDialog(),
     [],
   );
+  // FAZ 13 — Print. Title falls back to "Untitled" when there's no
+  // disk path; that label flows into the iframe <title> so the
+  // browser/OS print dialog has something readable to show.
+  const handlePrint = useCallback(() => {
+    const title = filePath
+      ? basename(filePath).replace(/\.(md|markdown|txt)$/i, "")
+      : UNTITLED_LABEL;
+    void printDocument(currentMd, title);
+  }, [filePath, currentMd, UNTITLED_LABEL]);
 
   const handlersRef = useRef({
     handleSave,
@@ -687,6 +697,7 @@ function App() {
     closeFind,
     openSettings,
     insertImage,
+    handlePrint,
     findNext: () => editorRef.current?.findNext(),
     findPrev: () => editorRef.current?.findPrev(),
     findOpen,
@@ -701,6 +712,7 @@ function App() {
     closeFind,
     openSettings,
     insertImage,
+    handlePrint,
     findNext: () => editorRef.current?.findNext(),
     findPrev: () => editorRef.current?.findPrev(),
     findOpen,
@@ -758,6 +770,10 @@ function App() {
         // Ctrl+Shift+I — Insert image (matches CONTROLS.md).
         e.preventDefault();
         h.insertImage();
+      } else if (key === "p" && !e.shiftKey) {
+        // Ctrl+P — Print (Typora / browser convention).
+        e.preventDefault();
+        h.handlePrint();
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -775,7 +791,7 @@ function App() {
         <span className="app-stats">
           {t("header.characters", { count: currentMd.length })}
         </span>
-        <ExportMenu onExport={handleExport} />
+        <ExportMenu onExport={handleExport} onPrint={handlePrint} />
         <select
           className="app-theme-select"
           value={theme.preference}

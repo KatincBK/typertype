@@ -1,6 +1,13 @@
 import { invoke } from "@tauri-apps/api/core";
 import { openPath } from "@tauri-apps/plugin-opener";
+import i18n from "./i18n";
 import { logger } from "./logger";
+
+function describe(err: unknown): string {
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
 
 // MVP-8 — surface the well-known config paths and offer one-click "open in
 // default editor / file manager" actions for the Settings dialog. Each
@@ -29,10 +36,7 @@ export async function openUserConfig(): Promise<void> {
     await openPath(path);
   } catch (err) {
     logger.error("openUserConfig failed", err);
-    window.alert(
-      "Konfig dosyası açılamadı: " +
-        (err instanceof Error ? err.message : String(err)),
-    );
+    window.alert(i18n.t("errors.openConfig", { detail: describe(err) }));
   }
 }
 
@@ -42,9 +46,6 @@ export async function openThemesDir(): Promise<void> {
     await openPath(dir);
   } catch (err) {
     logger.error("openThemesDir failed", err);
-    window.alert(
-      "Tema klasörü açılamadı: " +
-        (err instanceof Error ? err.message : String(err)),
-    );
+    window.alert(i18n.t("errors.openThemes", { detail: describe(err) }));
   }
 }

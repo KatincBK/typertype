@@ -133,5 +133,15 @@
   },
   "updater": {
     "prompt": "Yeni sürüm: v{{version}}\n{{body}}\n\nŞimdi indirilip kurulsun mu? (Uygulama yeniden başlatılacak.)"
+  },
+  "errors": {
+    "openFile": "Dosya açılamadı: {{detail}}",
+    "saveFile": "Dosya kaydedilemedi: {{detail}}",
+    "readFile": "Dosya okunamadı: {{detail}}",
+    "readFolder": "Klasör okunamadı: {{detail}}",
+    "openConfig": "Konfig dosyası açılamadı: {{detail}}",
+    "openThemes": "Tema klasörü açılamadı: {{detail}}",
+    "copyImage": "Resim kopyalanamadı: {{detail}}",
+    "writeImage": "Resim diske yazılamadı: {{detail}}"
   }
 }

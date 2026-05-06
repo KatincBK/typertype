@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "./i18n";
 import { logger } from "./logger";
 
 // MVP-3 — folder picker + recursive directory tree wrappers around the
@@ -25,7 +26,7 @@ export async function safeReadDirTree(path: string): Promise<FileEntry | null> {
     return await readDirTree(path);
   } catch (err) {
     logger.error("readDirTree failed", err);
-    window.alert("Klasör okunamadı: " + describe(err));
+    window.alert(i18n.t("errors.readFolder", { detail: describe(err) }));
     return null;
   }
 }

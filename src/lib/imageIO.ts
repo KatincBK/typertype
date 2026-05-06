@@ -1,5 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "./i18n";
 import { logger } from "./logger";
+
+function describe(err: unknown): string {
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
 
 // FAZ 11 — Thin wrappers around the three Rust image commands. Each
 // returns the path that should land in the markdown source: relative
@@ -26,10 +33,7 @@ export async function copyImageToAssets(
     });
   } catch (err) {
     logger.error("copy_image_to_assets failed", err);
-    window.alert(
-      "Resim kopyalanamadı: " +
-        (err instanceof Error ? err.message : String(err)),
-    );
+    window.alert(i18n.t("errors.copyImage", { detail: describe(err) }));
     return null;
   }
 }
@@ -48,10 +52,7 @@ export async function writeImageBytes(
     });
   } catch (err) {
     logger.error("write_image_bytes failed", err);
-    window.alert(
-      "Resim diske yazılamadı: " +
-        (err instanceof Error ? err.message : String(err)),
-    );
+    window.alert(i18n.t("errors.writeImage", { detail: describe(err) }));
     return null;
   }
 }

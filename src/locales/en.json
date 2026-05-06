@@ -133,5 +133,15 @@
   },
   "updater": {
     "prompt": "New version: v{{version}}\n{{body}}\n\nDownload and install now? (The app will restart.)"
+  },
+  "errors": {
+    "openFile": "Could not open file: {{detail}}",
+    "saveFile": "Could not save file: {{detail}}",
+    "readFile": "Could not read file: {{detail}}",
+    "readFolder": "Could not read folder: {{detail}}",
+    "openConfig": "Could not open config file: {{detail}}",
+    "openThemes": "Could not open themes folder: {{detail}}",
+    "copyImage": "Could not copy image: {{detail}}",
+    "writeImage": "Could not write image to disk: {{detail}}"
   }
 }

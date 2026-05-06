@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "./i18n";
 import { logger } from "./logger";
 
 // MVP-2 — thin wrappers around the Rust file-I/O commands. Each function
@@ -43,7 +44,7 @@ export async function safeOpenFile(): Promise<OpenedFile | null> {
     return await openFile();
   } catch (err) {
     logger.error("openFile failed", err);
-    window.alert("Dosya açılamadı: " + describe(err));
+    window.alert(i18n.t("errors.openFile", { detail: describe(err) }));
     return null;
   }
 }
@@ -57,7 +58,7 @@ export async function safeSaveFile(
     return true;
   } catch (err) {
     logger.error("saveFile failed", err);
-    window.alert("Dosya kaydedilemedi: " + describe(err));
+    window.alert(i18n.t("errors.saveFile", { detail: describe(err) }));
     return false;
   }
 }
@@ -67,7 +68,7 @@ export async function safeReadFile(path: string): Promise<string | null> {
     return await invoke<string>("read_text_file", { path });
   } catch (err) {
     logger.error("readFile failed", err);
-    window.alert("Dosya okunamadı: " + describe(err));
+    window.alert(i18n.t("errors.readFile", { detail: describe(err) }));
     return null;
   }
 }

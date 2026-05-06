@@ -256,7 +256,10 @@ function App() {
   const handleSave = useCallback(async () => {
     let target = filePath;
     if (!target) {
-      target = await pickSavePath(UNTITLED_LABEL + ".md");
+      // Read the locale fresh — UNTITLED_LABEL is captured at render
+      // time, but this callback's deps don't include it, so a
+      // language switch wouldn't update the default filename.
+      target = await pickSavePath(i18n.t("common.untitled") + ".md");
       if (!target) return;
     }
     const ok = await safeSaveFile(target, currentMd);
@@ -416,7 +419,11 @@ function App() {
         setRecoveryHandled(true);
         return;
       }
-      const label = snap.filePath ? basename(snap.filePath) : UNTITLED_LABEL;
+      // i18n.t fresh-reads — this effect's deps are empty so a
+      // closured UNTITLED_LABEL would be the at-mount Turkish copy.
+      const label = snap.filePath
+        ? basename(snap.filePath)
+        : i18n.t("common.untitled");
       const when = new Date(snap.savedAt).toLocaleString();
       // Use i18n.t directly: this effect runs once on mount and can't
       // see future language changes through the closured t().

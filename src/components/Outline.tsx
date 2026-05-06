@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { HeadingItem } from "@/lib/headings";
 
 interface Props {
@@ -6,8 +7,9 @@ interface Props {
 }
 
 export function Outline({ headings, onJump }: Props) {
+  const { t } = useTranslation();
   if (headings.length === 0) {
-    return <div className="outline-empty">Henüz başlık yok</div>;
+    return <div className="outline-empty">{t("sidebar.noHeadings")}</div>;
   }
   return (
     <div className="outline">

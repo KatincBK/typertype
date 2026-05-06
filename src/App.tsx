@@ -43,6 +43,8 @@ import { checkForUpdate } from "@/lib/updater";
 import { addUserWord, ignoreWord, setSpellLanguage } from "@/lib/spellChecker";
 import { loadUserDict, persistUserDict } from "@/lib/userDict";
 import { printDocument } from "@/lib/print";
+import { loadSettings } from "@/lib/settings";
+import { getSampleDoc } from "@/lib/sampleDoc";
 import { SpellMenu } from "@/components/SpellMenu";
 import type { SpellContextDetail } from "@/editor/spell";
 import {
@@ -64,88 +66,12 @@ import type {
 } from "@/editor/imageView";
 import "./App.css";
 
-const SAMPLE_MARKDOWN = `# Tylike
-
-Bu bir **markdown editörü**. Yazmaya _başla_.
-
-## Temel Mark'lar
-
-- **Bold**, _italic_, \`inline code\`, [link](https://example.com)
-
-## Yeni Mark'lar (Adım 1)
-
-- ~~Üstü çizili~~ metin
-- ==Vurgulanmış== metin (highlight)
-- Kimya altyazısı: H~2~O ve CO~2~
-- Matematik üst yazısı: x^2^ ve E = mc^2^
-
-## Block Elementler
-
-> Markdown'u WYSIWYG olarak gör. Sembolleri yazınca otomatik dönüşür.
-
-\`\`\`
-function hello() {
-  return "world";
-}
-\`\`\`
-
----
-
-## Math (Adım 8)
-
-Inline: Einstein denklemi $E = mc^2$ ve Pisagor $a^2 + b^2 = c^2$.
-
-Block:
-
-$$
-\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
-$$
-
-## Mermaid (Adım 9)
-
-\`\`\`mermaid
-flowchart LR
-  A[Markdown] --> B(ProseMirror)
-  B --> C{KaTeX / Mermaid?}
-  C -->|evet| D[NodeView]
-  C -->|hayır| E[Plain Text]
-\`\`\`
-
-## Emoji (Adım 7)
-
-Yazınca \`:smile:\` → :smile:, \`:rocket:\` → :rocket:, \`:tada:\` → :tada:.
-Yazarken \`:\` sonrasına başlarsan otomatik popup açılır (Yön tuşları + Enter / Esc).
-
-## İçindekiler (Adım 11)
-
-[toc]
-
-## Tablo (Adım 10) — \`Ctrl+T\` ile yenisini ekle
-
-| Özellik | Durum | Açıklama |
-| --- | :---: | --- |
-| WYSIWYG | ✅ | ProseMirror tabanlı |
-| Math | ✅ | KaTeX |
-| Mermaid | ✅ | Live preview |
-| Tablo | ✅ | prosemirror-tables |
-
-## Dipnotlar (Adım 11)
-
-Bu cümlede bir dipnot[^1] var, ardından bir tane daha[^typora].
-
-[^1]: İlk dipnot, sayısal id'li.
-[^typora]: Dipnot id'leri serbest metin olabilir.
-
-## Kısayollar
-
-- Heading: \`Ctrl+1\` … \`Ctrl+6\`, paragraph: \`Ctrl+0\`
-- Bold \`Ctrl+B\`, italic \`Ctrl+I\`, underline \`Ctrl+U\`, strike \`Alt+Shift+5\`
-- Math block \`Ctrl+Shift+M\`, code fence \`Ctrl+Shift+K\`, table \`Ctrl+T\`
-- Quote: \`Ctrl+Shift+Q\`, bullet: \`Ctrl+Shift+]\`, numbered: \`Ctrl+Shift+[\`
-- Dosya: \`Ctrl+N\` (yeni), \`Ctrl+O\` (aç), \`Ctrl+S\` (kaydet), \`Ctrl+Shift+S\` (farklı kaydet)
-- Sidebar: \`Ctrl+Shift+L\`, Bul: \`Ctrl+F\`, Değiştir: \`Ctrl+H\`, Sonraki: \`F3\`
-- Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
-`;
+// FAZ 19 follow-up — sample doc is locale-keyed via getSampleDoc.
+// The lazy useState initializer below reads loadSettings() (the same
+// localStorage source useSettings reads) so the sample matches the
+// user's saved interface language on first paint, before settingsApi
+// has run its hook.
+const initialSample = () => getSampleDoc(loadSettings().app.language);
 
 function App() {
   const { t } = useTranslation();
@@ -153,9 +79,9 @@ function App() {
   // Three markdown snapshots — see the MVP-2 commit message for why these
   // are separate. loadedMd drives the <Editor> remount.
   const [filePath, setFilePath] = useState<string | null>(null);
-  const [loadedMd, setLoadedMd] = useState(SAMPLE_MARKDOWN);
-  const [savedMd, setSavedMd] = useState(SAMPLE_MARKDOWN);
-  const [currentMd, setCurrentMd] = useState(SAMPLE_MARKDOWN);
+  const [loadedMd, setLoadedMd] = useState(initialSample);
+  const [savedMd, setSavedMd] = useState(initialSample);
+  const [currentMd, setCurrentMd] = useState(initialSample);
 
   // MVP-3 — sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);

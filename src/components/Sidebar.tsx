@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { FileEntry } from "@/lib/folderIO";
 import type { HeadingItem } from "@/lib/headings";
 import { basename } from "@/lib/fileIO";
@@ -25,12 +26,13 @@ export function Sidebar({
   onFileClick,
   onJumpHeading,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <aside className="sidebar">
       {recents.length > 0 ? (
         <section className="sidebar-section sidebar-recents-section">
           <header className="sidebar-section-header">
-            <span>Son Dosyalar</span>
+            <span>{t("sidebar.recents")}</span>
           </header>
           <div className="sidebar-recents">
             {recents.slice(0, 5).map((path) => (
@@ -49,14 +51,14 @@ export function Sidebar({
       ) : null}
       <section className="sidebar-section">
         <header className="sidebar-section-header">
-          <span>Dosyalar</span>
+          <span>{t("sidebar.files")}</span>
           <button
             type="button"
             className="sidebar-action"
             onClick={onPickFolder}
-            title="Klasör aç"
+            title={t("sidebar.openFolderTitle")}
           >
-            Klasör Aç
+            {t("sidebar.openFolderButton")}
           </button>
         </header>
         {rootPath ? (
@@ -64,7 +66,7 @@ export function Sidebar({
             {rootPath}
           </div>
         ) : (
-          <div className="sidebar-empty">Henüz klasör seçilmedi</div>
+          <div className="sidebar-empty">{t("sidebar.noFolderSelected")}</div>
         )}
         {tree ? (
           <FileTree
@@ -77,7 +79,7 @@ export function Sidebar({
       </section>
       <section className="sidebar-section sidebar-outline-section">
         <header className="sidebar-section-header">
-          <span>İçindekiler</span>
+          <span>{t("sidebar.outline")}</span>
         </header>
         <Outline headings={headings} onJump={onJumpHeading} />
       </section>

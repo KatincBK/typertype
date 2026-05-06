@@ -115,6 +115,16 @@
     "addToDict": "Add to dictionary",
     "ignore": "Ignore (session)"
   },
+  "sidebar": {
+    "recents": "Recent Files",
+    "files": "Files",
+    "openFolderTitle": "Open folder",
+    "openFolderButton": "Open Folder",
+    "noFolderSelected": "No folder selected yet",
+    "outline": "Outline",
+    "noHeadings": "No headings yet",
+    "emptyFolder": "empty"
+  },
   "fileWatcher": {
     "externalChange": "The file changed externally. Reload from disk? (Local changes will be lost.)"
   },

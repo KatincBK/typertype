@@ -115,6 +115,16 @@
     "addToDict": "Sözlüğe ekle",
     "ignore": "Yoksay (oturum)"
   },
+  "sidebar": {
+    "recents": "Son Dosyalar",
+    "files": "Dosyalar",
+    "openFolderTitle": "Klasör aç",
+    "openFolderButton": "Klasör Aç",
+    "noFolderSelected": "Henüz klasör seçilmedi",
+    "outline": "İçindekiler",
+    "noHeadings": "Henüz başlık yok",
+    "emptyFolder": "boş"
+  },
   "fileWatcher": {
     "externalChange": "Dosya dışarıda değişti. Diskten yeniden yüklensin mi? (Yerel değişiklikler kaybolacak.)"
   },

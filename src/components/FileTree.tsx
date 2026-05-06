@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { FileEntry } from "@/lib/folderIO";
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function FileTree({ entry, activePath, onFileClick, isRoot }: Props) {
+  const { t } = useTranslation();
   // Root expanded by default; nested folders collapsed.
   const [expanded, setExpanded] = useState<boolean>(!!isRoot);
 
@@ -57,7 +59,7 @@ export function FileTree({ entry, activePath, onFileClick, isRoot }: Props) {
         </div>
       ) : null}
       {expanded && entry.children && entry.children.length === 0 && !isRoot ? (
-        <div className="file-tree-empty">boş</div>
+        <div className="file-tree-empty">{t("sidebar.emptyFolder")}</div>
       ) : null}
     </div>
   );

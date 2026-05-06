@@ -109,6 +109,30 @@ function htmlImgPlugin(md: MarkdownIt) {
   });
 }
 
+// Underline mark — the serializer writes `<u>...</u>` (no markdown
+// equivalent), so parsing has to recognise the same shape. We rewrite
+// `<u>` / `</u>` html_inline tokens into underline_open / _close pairs;
+// the parser spec below handles them via the standard mark machinery.
+const U_OPEN_RE = /^<u\b[^>]*>$/i;
+const U_CLOSE_RE = /^<\/u\s*>$/i;
+
+function underlinePlugin(md: MarkdownIt) {
+  md.core.ruler.after("inline", "html_u_to_underline", (state) => {
+    for (const tok of state.tokens) {
+      if (tok.type !== "inline" || !tok.children) continue;
+      for (let i = 0; i < tok.children.length; i++) {
+        const c = tok.children[i];
+        if (c.type !== "html_inline") continue;
+        if (U_OPEN_RE.test(c.content)) {
+          tok.children[i] = new Token("underline_open", "u", 1);
+        } else if (U_CLOSE_RE.test(c.content)) {
+          tok.children[i] = new Token("underline_close", "u", -1);
+        }
+      }
+    }
+  });
+}
+
 // FAZ 22 follow-up — table cells. The prosemirror-tables schema declares
 // table_cell / table_header as `block+`, but markdown-it emits a bare
 // `inline` token for cell content (no paragraph wrap). prosemirror-
@@ -150,7 +174,8 @@ const md = MarkdownIt({ html: true })
   .use(mathMarkdownItPlugin)
   .use(tocMarkdownItPlugin)
   .use(htmlImgPlugin)
-  .use(wrapTableCellsPlugin);
+  .use(wrapTableCellsPlugin)
+  .use(underlinePlugin);
 
 // MVP-7 — render rules for HTML export. The editor side uses md.parse()
 // and feeds tokens into prosemirror-markdown, so adding renderer.rules is
@@ -318,6 +343,7 @@ const parser = new MarkdownParser(schema, md, {
   mark: { mark: "highlight" },
   sub: { mark: "subscript" },
   sup: { mark: "superscript" },
+  underline: { mark: "underline" },
 });
 
 function escapeHtmlAttr(s: string): string {

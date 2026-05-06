@@ -27,15 +27,13 @@ describe("serializer round-trip", () => {
     expect(out).toContain("`code`");
   });
 
-  it("preserves strikethrough / highlight / sub / sup", () => {
-    // Underline (<u>...</u>) is a known one-way mark for now — written
-    // by the serializer but not parsed back, since prosemirror-markdown
-    // has no handler for raw html_inline tokens. Asserted separately.
-    const out = roundTrip("~~s~~ ==h== H~2~O E^2^");
+  it("preserves strikethrough / highlight / sub / sup / underline", () => {
+    const out = roundTrip("~~s~~ ==h== H~2~O E^2^ <u>u</u>");
     expect(out).toContain("~~s~~");
     expect(out).toContain("==h==");
     expect(out).toContain("H~2~O");
     expect(out).toContain("E^2^");
+    expect(out).toContain("<u>u</u>");
   });
 
   it("preserves inline math", () => {

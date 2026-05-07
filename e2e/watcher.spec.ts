@@ -87,9 +87,25 @@ test("self-write echo (incoming === savedMd) is ignored", async ({ page }) => {
   const editor = page.locator(".ProseMirror");
   await expect(editor.locator("h1")).toContainText("hello");
 
-  // After load, savedMd matches the seed. Emitting the same content
-  // back simulates a notify event triggered by our own save — the
-  // listener should yawn and leave the doc untouched.
+  // Make the doc dirty so the listener has a meaningful no-op signal:
+  // when the filter works, NO confirm dialog fires; if the filter ever
+  // regressed, App.tsx would route this through window.confirm because
+  // currentMd diverges from savedMd. Counting dialogs gives us a hard
+  // pass/fail rather than depending on visible content (which would
+  // look identical either way for an echo).
+  await editor.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.type(" extra");
+  // Belt-and-suspenders: the editor footer should now show some kind
+  // of dirty indicator. We don't assert on it (it's optional UX) —
+  // the important state is that currentMd !== savedMd internally.
+
+  let dialogCount = 0;
+  page.on("dialog", (d) => {
+    dialogCount++;
+    void d.dismiss();
+  });
+
   await page.evaluate(
     ({ path, content }) => {
       (
@@ -105,8 +121,10 @@ test("self-write echo (incoming === savedMd) is ignored", async ({ page }) => {
     { path: PATH, content: seed },
   );
 
-  // Nothing observable to wait *for*, so settle for a tick and assert
-  // the heading still reads "hello" — i.e. the editor wasn't rewritten.
   await page.waitForTimeout(150);
-  await expect(editor.locator("h1")).toContainText("hello");
+
+  expect(dialogCount).toBe(0);
+  // The user's edit is also still present — proves the listener did
+  // not silently overwrite the editor through the clean-state branch.
+  await expect(editor).toContainText("body extra");
 });

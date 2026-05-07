@@ -25,8 +25,16 @@ export async function listen<T>(
   };
 }
 
+function dispatch(event: string, payload?: unknown): void {
+  // Snapshot before iterating: a listener might unsubscribe itself
+  // (Set.forEach can skip subsequent entries when delete fires
+  // mid-iteration, depending on engine).
+  const snap = LISTENERS[event] ? Array.from(LISTENERS[event]) : [];
+  for (const cb of snap) cb({ payload });
+}
+
 export async function emit(event: string, payload?: unknown): Promise<void> {
-  LISTENERS[event]?.forEach((cb) => cb({ payload }));
+  dispatch(event, payload);
 }
 
 declare global {
@@ -43,8 +51,6 @@ if (typeof window !== "undefined") {
   const existing = window.__tylikeE2E ?? {};
   window.__tylikeE2E = {
     ...existing,
-    emit: (event: string, payload?: unknown) => {
-      LISTENERS[event]?.forEach((cb) => cb({ payload }));
-    },
+    emit: (event: string, payload?: unknown) => dispatch(event, payload),
   };
 }

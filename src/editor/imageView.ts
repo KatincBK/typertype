@@ -73,6 +73,10 @@ export class ImageView implements NodeView {
   private getDocPath: () => string | null;
   private resizing = false;
   private pendingWidth: string | null = null;
+  // Buttons with translated titles + resize handle — kept so a language
+  // flip can rewrite their `title` attributes in place.
+  private localizedTitles: Array<{ el: HTMLElement; key: string }> = [];
+  private onLanguageChanged = () => this.relabel();
 
   constructor(
     node: Node,
@@ -118,28 +122,26 @@ export class ImageView implements NodeView {
     const popover = document.createElement("span");
     popover.className = "image-popover";
 
-    // Vanilla DOM ⇒ no useTranslation hook; reach into the i18n
-    // singleton so language flips are still respected on next mount.
-    // Existing image popovers won't relabel mid-flight — acceptable
-    // since the user has to re-select the image after a language
-    // change anyway.
+    // Vanilla DOM ⇒ no useTranslation hook; pull labels from the i18n
+    // singleton at construction and subscribe to `languageChanged` so
+    // existing popovers relabel without needing a remount.
     popover.appendChild(
-      this.makeBtn("⯇", i18n.t("image.popover.alignLeft"), () =>
+      this.makeBtn("⯇", "image.popover.alignLeft", () =>
         this.setAlign("left"),
       ),
     );
     popover.appendChild(
-      this.makeBtn("◉", i18n.t("image.popover.alignCenter"), () =>
+      this.makeBtn("◉", "image.popover.alignCenter", () =>
         this.setAlign("center"),
       ),
     );
     popover.appendChild(
-      this.makeBtn("⯈", i18n.t("image.popover.alignRight"), () =>
+      this.makeBtn("⯈", "image.popover.alignRight", () =>
         this.setAlign("right"),
       ),
     );
     popover.appendChild(
-      this.makeBtn("⌫", i18n.t("image.popover.alignClear"), () =>
+      this.makeBtn("⌫", "image.popover.alignClear", () =>
         this.setAlign(null),
       ),
     );
@@ -147,17 +149,17 @@ export class ImageView implements NodeView {
     sep.className = "image-popover-sep";
     popover.appendChild(sep);
     popover.appendChild(
-      this.makeBtn("Aa", i18n.t("image.popover.editAlt"), () =>
+      this.makeBtn("Aa", "image.popover.editAlt", () =>
         this.openAltDialog(),
       ),
     );
     popover.appendChild(
-      this.makeBtn("⛶", i18n.t("image.popover.fullscreen"), () =>
+      this.makeBtn("⛶", "image.popover.fullscreen", () =>
         this.openLightbox(),
       ),
     );
     popover.appendChild(
-      this.makeBtn("100%", i18n.t("image.popover.resetSize"), () =>
+      this.makeBtn("100%", "image.popover.resetSize", () =>
         this.setWidth(null),
       ),
     );
@@ -166,6 +168,7 @@ export class ImageView implements NodeView {
     const handle = document.createElement("span");
     handle.className = "image-resize-handle";
     handle.title = i18n.t("image.resizeHandle");
+    this.localizedTitles.push({ el: handle, key: "image.resizeHandle" });
     handle.addEventListener("mousedown", this.startResize);
     this.controls.appendChild(handle);
 
@@ -176,14 +179,15 @@ export class ImageView implements NodeView {
     this.dom.appendChild(this.controls);
 
     this.applyAttrs(node);
+    i18n.on("languageChanged", this.onLanguageChanged);
   }
 
-  private makeBtn(label: string, title: string, onClick: () => void) {
+  private makeBtn(label: string, titleKey: string, onClick: () => void) {
     const b = document.createElement("button");
     b.type = "button";
     b.className = "image-btn";
     b.textContent = label;
-    b.title = title;
+    b.title = i18n.t(titleKey);
     b.tabIndex = -1;
     b.addEventListener("mousedown", (e) => e.preventDefault());
     b.addEventListener("click", (e) => {
@@ -191,7 +195,14 @@ export class ImageView implements NodeView {
       e.stopPropagation();
       onClick();
     });
+    this.localizedTitles.push({ el: b, key: titleKey });
     return b;
+  }
+
+  private relabel() {
+    for (const { el, key } of this.localizedTitles) {
+      el.title = i18n.t(key);
+    }
   }
 
   private applyAttrs(node: Node) {
@@ -349,6 +360,10 @@ export class ImageView implements NodeView {
   stopEvent(event: Event) {
     // Click / mousedown on controls are ours, not ProseMirror's.
     return this.controls.contains(event.target as globalThis.Node);
+  }
+
+  destroy() {
+    i18n.off("languageChanged", this.onLanguageChanged);
   }
 }
 

@@ -86,6 +86,15 @@ export const tableKeyboardCommands = {
 class TableToolbarView {
   private toolbar: HTMLElement;
   private editorView: EditorView;
+  // Each button's label + title come from the i18n singleton; remember
+  // the keys so a language flip can rewrite them in place rather than
+  // waiting for the next editor remount.
+  private localized: Array<{
+    btn: HTMLButtonElement;
+    labelKey: string;
+    titleKey: string;
+  }> = [];
+  private onLanguageChanged = () => this.relabel();
 
   constructor(view: EditorView) {
     this.editorView = view;
@@ -94,33 +103,39 @@ class TableToolbarView {
     this.toolbar.style.display = "none";
     this.attachButtons();
     document.body.appendChild(this.toolbar);
+    i18n.on("languageChanged", this.onLanguageChanged);
     this.update(view);
   }
 
   private attachButtons() {
-    const make = (label: string, title: string, run: Command) => {
+    const make = (labelKey: string, titleKey: string, run: Command) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "table-toolbar-btn";
-      btn.title = title;
-      btn.textContent = label;
+      btn.title = t(titleKey);
+      btn.textContent = t(labelKey);
       btn.addEventListener("mousedown", (e) => {
         e.preventDefault();
         run(this.editorView.state, this.editorView.dispatch);
         this.editorView.focus();
       });
       this.toolbar.appendChild(btn);
+      this.localized.push({ btn, labelKey, titleKey });
     };
-    // Vanilla DOM toolbar — pull labels through the i18n singleton at
-    // construction time. Tables remount when the editor remounts (open
-    // a different doc), so a language switch flows through naturally.
-    make(t("table.labelColLeft"), t("table.colBefore"), addColumnBefore);
-    make(t("table.labelColRight"), t("table.colAfter"), addColumnAfter);
-    make(t("table.labelColDelete"), t("table.delCol"), deleteColumn);
-    make(t("table.labelRowUp"), t("table.rowBefore"), addRowBefore);
-    make(t("table.labelRowDown"), t("table.rowAfter"), addRowAfter);
-    make(t("table.labelRowDelete"), t("table.delRow"), deleteRow);
-    make(t("table.labelTableDelete"), t("table.delTable"), deleteTable);
+    make("table.labelColLeft", "table.colBefore", addColumnBefore);
+    make("table.labelColRight", "table.colAfter", addColumnAfter);
+    make("table.labelColDelete", "table.delCol", deleteColumn);
+    make("table.labelRowUp", "table.rowBefore", addRowBefore);
+    make("table.labelRowDown", "table.rowAfter", addRowAfter);
+    make("table.labelRowDelete", "table.delRow", deleteRow);
+    make("table.labelTableDelete", "table.delTable", deleteTable);
+  }
+
+  private relabel() {
+    for (const { btn, labelKey, titleKey } of this.localized) {
+      btn.textContent = t(labelKey);
+      btn.title = t(titleKey);
+    }
   }
 
   update(view: EditorView) {
@@ -152,6 +167,7 @@ class TableToolbarView {
   }
 
   destroy() {
+    i18n.off("languageChanged", this.onLanguageChanged);
     this.toolbar.remove();
   }
 }

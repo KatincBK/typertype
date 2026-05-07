@@ -3,20 +3,24 @@
 // @tauri-apps/api/event to this file when E2E=1, so renderer code that
 // imports `invoke` / `listen` keeps compiling without any conditional
 // branches in the app source.
+//
+// Tests can preconfigure renderer state via `window.__tylikeE2E`
+// (set with page.addInitScript). `initialFile` flows through
+// get_initial_args ⇒ launchArgs ⇒ loadFile, and `files` backs
+// read_text_file responses.
 
 const HANDLERS: Record<string, (args?: Record<string, unknown>) => unknown> = {
-  // The launchArgs path looks for `file: string | null`; null → recovery
-  // / sample flow runs without trying to open a real file.
-  get_initial_args: () => ({ file: null }),
-  // Recovery snapshot: pretend there's nothing to restore.
+  get_initial_args: () => ({
+    file: window.__tylikeE2E?.initialFile ?? null,
+  }),
   read_recovery: () => null,
-  // User dictionary: empty list keeps spell-check off by default.
   read_user_dict: () => [],
-  // Best-effort defaults for the rest — e2e tests assert UI behaviour,
-  // not file-system side effects.
   read_user_config: () => "",
   read_user_css: () => "",
-  read_text_file: () => "",
+  read_text_file: (args) => {
+    const path = String(args?.path ?? "");
+    return window.__tylikeE2E?.files?.[path] ?? "";
+  },
   write_text_file: () => undefined,
   write_recovery: () => undefined,
   clear_recovery: () => undefined,

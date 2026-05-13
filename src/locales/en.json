@@ -16,7 +16,25 @@
     "themeAuto": "Auto",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "themeSepia": "Sepia"
+    "themeSepia": "Sepia",
+    "helpTitle": "Help"
+  },
+  "about": {
+    "title": "About Tylike",
+    "tagline": "Typora-compatible, open-source Windows Markdown editor.",
+    "shortcutsTitle": "Keyboard Shortcuts",
+    "shortcuts": {
+      "new": "New document",
+      "open": "Open file",
+      "save": "Save",
+      "saveAs": "Save as",
+      "find": "Find",
+      "replace": "Replace",
+      "toggleSidebar": "Toggle sidebar",
+      "settings": "Settings",
+      "insertImage": "Insert image",
+      "print": "Print"
+    }
   },
   "find": {
     "findPlaceholder": "Find",

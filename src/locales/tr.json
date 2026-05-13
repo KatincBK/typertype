@@ -16,7 +16,25 @@
     "themeAuto": "Otomatik",
     "themeLight": "Açık",
     "themeDark": "Koyu",
-    "themeSepia": "Sepya"
+    "themeSepia": "Sepya",
+    "helpTitle": "Yardım"
+  },
+  "about": {
+    "title": "Tylike Hakkında",
+    "tagline": "Typora uyumlu, açık kaynak Windows Markdown editörü.",
+    "shortcutsTitle": "Klavye Kısayolları",
+    "shortcuts": {
+      "new": "Yeni belge",
+      "open": "Dosya aç",
+      "save": "Kaydet",
+      "saveAs": "Farklı kaydet",
+      "find": "Bul",
+      "replace": "Değiştir",
+      "toggleSidebar": "Kenar çubuğunu göster/gizle",
+      "settings": "Ayarlar",
+      "insertImage": "Resim ekle",
+      "print": "Yazdır"
+    }
   },
   "find": {
     "findPlaceholder": "Bul",

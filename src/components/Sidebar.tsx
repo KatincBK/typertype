@@ -4,6 +4,7 @@ import type { HeadingItem } from "@/lib/headings";
 import { basename } from "@/lib/fileIO";
 import { FileTree } from "./FileTree";
 import { Outline } from "./Outline";
+import { CollapsibleSection } from "./CollapsibleSection";
 
 interface Props {
   rootPath: string | null;
@@ -30,10 +31,11 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       {recents.length > 0 ? (
-        <section className="sidebar-section sidebar-recents-section">
-          <header className="sidebar-section-header">
-            <span>{t("sidebar.recents")}</span>
-          </header>
+        <CollapsibleSection
+          title={t("sidebar.recents")}
+          storageKey="sidebar.section.recents"
+          defaultOpen={true}
+        >
           <div className="sidebar-recents">
             {recents.slice(0, 5).map((path) => (
               <button
@@ -47,20 +49,27 @@ export function Sidebar({
               </button>
             ))}
           </div>
-        </section>
+        </CollapsibleSection>
       ) : null}
-      <section className="sidebar-section">
-        <header className="sidebar-section-header">
-          <span>{t("sidebar.files")}</span>
+
+      <CollapsibleSection
+        title={t("sidebar.files")}
+        storageKey="sidebar.section.files"
+        defaultOpen={true}
+        actions={
           <button
             type="button"
             className="sidebar-action"
-            onClick={onPickFolder}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPickFolder();
+            }}
             title={t("sidebar.openFolderTitle")}
           >
             {t("sidebar.openFolderButton")}
           </button>
-        </header>
+        }
+      >
         {rootPath ? (
           <div className="sidebar-root" title={rootPath}>
             {rootPath}
@@ -76,13 +85,15 @@ export function Sidebar({
             isRoot
           />
         ) : null}
-      </section>
-      <section className="sidebar-section sidebar-outline-section">
-        <header className="sidebar-section-header">
-          <span>{t("sidebar.outline")}</span>
-        </header>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title={t("sidebar.outline")}
+        storageKey="sidebar.section.outline"
+        defaultOpen={true}
+      >
         <Outline headings={headings} onJump={onJumpHeading} />
-      </section>
+      </CollapsibleSection>
     </aside>
   );
 }

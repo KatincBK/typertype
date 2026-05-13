@@ -21,6 +21,8 @@
   --selected-cell: rgba(64, 128, 255, 0.16);
   --error-bg: #fee2e2;
   --error-fg: #991b1b;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.22);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.38);
 }
 
 [data-theme="dark"] {
@@ -42,6 +44,8 @@
   --selected-cell: rgba(96, 165, 250, 0.22);
   --error-bg: #4a1c1c;
   --error-fg: #fecaca;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
 }
 
 [data-theme="sepia"] {
@@ -63,6 +67,38 @@
   --selected-cell: rgba(139, 69, 19, 0.15);
   --error-bg: #f3d7c5;
   --error-fg: #7a2c14;
+  --scrollbar-thumb: rgba(80, 60, 30, 0.28);
+  --scrollbar-thumb-hover: rgba(80, 60, 30, 0.45);
+}
+
+/* Custom scrollbars — theme-aware via CSS variables.
+ * Single rule covers every overflow:auto/scroll surface in the app
+ * (editor, sidebar, settings body, etc.) so the OS default chrome
+ * never bleeds through in dark mode. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 html,
@@ -70,6 +106,7 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  overflow: hidden;
   background: var(--bg);
   color: var(--fg);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -135,6 +172,108 @@ body,
 
 .app-theme-select:hover {
   background: var(--bg-hover);
+}
+
+.app-help-btn {
+  appearance: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-help-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+/* About dialog — reuses .modal-backdrop. */
+
+.about-dialog {
+  background: var(--bg-modal);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.about-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.about-body {
+  padding: 0.9rem 1.1rem 1.1rem;
+  overflow: auto;
+}
+
+.about-tagline {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.about-section-title {
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.about-shortcuts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.about-shortcuts td {
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+
+.about-shortcuts td:first-child {
+  width: 130px;
+  white-space: nowrap;
+}
+
+.about-shortcuts kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--bg-subtle);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--fg);
 }
 
 /* MVP-8 — settings dialog */
@@ -415,6 +554,18 @@ body,
   position: relative;
 }
 
+/* Editor scroll wrapper — owns the vertical scrollbar so it sits at the
+ * far right of the editing area instead of in the middle (which is where
+ * the editor's own scrollbar landed when .editor itself scrolled, because
+ * .editor is centered with max-width). */
+.editor-scroll {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+}
+
 /* MVP-4 — find / replace bar */
 
 .find-bar {
@@ -514,7 +665,9 @@ body,
   outline: 1px solid var(--find-current-outline);
 }
 
-/* MVP-3 — sidebar */
+/* MVP-3 — sidebar.
+ * One scroll surface on .sidebar itself; sections grow with content and
+ * collapse via the chevron toggle in their header. */
 
 .sidebar {
   width: 260px;
@@ -523,13 +676,13 @@ body,
   flex-direction: column;
   border-right: 1px solid var(--border-subtle);
   background: var(--bg-subtle);
-  overflow: hidden;
+  overflow: auto;
 }
 
 .sidebar-section {
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  flex-shrink: 0;
 }
 
 .sidebar-section + .sidebar-section {
@@ -540,13 +693,55 @@ body,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
+  gap: 6px;
+  padding: 0 0.5rem 0 0;
   font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
   flex-shrink: 0;
+}
+
+.sidebar-section-toggle {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 0.75rem;
+  flex: 1;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.sidebar-section-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+.sidebar-chevron {
+  display: inline-block;
+  width: 0.9em;
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+.sidebar-section-actions {
+  flex-shrink: 0;
+}
+
+.sidebar-section-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .sidebar-action {
@@ -581,22 +776,6 @@ body,
   color: var(--muted);
   font-style: italic;
   padding: 0.4rem 0.75rem;
-}
-
-.sidebar-section:first-child {
-  flex: 1 1 auto;
-  overflow: auto;
-}
-
-.sidebar-recents-section {
-  flex: 0 0 auto;
-  max-height: 30%;
-  overflow: auto;
-}
-
-.sidebar-outline-section {
-  flex: 1 1 40%;
-  overflow: auto;
 }
 
 /* Recent files */
@@ -734,13 +913,11 @@ body,
 .outline-h6 { padding-left: 66px; font-size: 0.78rem; color: var(--muted); }
 
 .editor {
-  flex: 1;
-  overflow: auto;
   padding: 2rem 4rem;
   max-width: var(--editor-width, 860px);
-  margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  /* Scrolling is owned by .editor-scroll above. */
 }
 
 .editor .ProseMirror {

@@ -60,6 +60,7 @@ import { ExportMenu, type ExportFormat } from "@/components/ExportMenu";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { ImageAltDialog } from "@/components/ImageAltDialog";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { AboutDialog } from "@/components/AboutDialog";
 import type {
   ImageAltEditDetail,
   ImageLightboxDetail,
@@ -120,6 +121,7 @@ function App() {
   // delays below)
   const settingsApi = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   // FAZ 11 follow-up — image dialogs are driven by custom DOM events
   // bubbled out of the ImageView NodeView. We hold the per-event commit
@@ -738,6 +740,15 @@ function App() {
           <option value="dark">{t("header.themeDark")}</option>
           <option value="sepia">{t("header.themeSepia")}</option>
         </select>
+        <button
+          type="button"
+          className="app-help-btn"
+          onClick={() => setAboutOpen(true)}
+          title={t("header.helpTitle")}
+          aria-label={t("header.helpTitle")}
+        >
+          ?
+        </button>
       </header>
       <div className="app-body">
         {sidebarOpen ? (
@@ -774,13 +785,15 @@ function App() {
               onClose={closeFind}
             />
           ) : null}
-          <Editor
-            ref={editorRef}
-            initialMarkdown={loadedMd}
-            currentFilePath={filePath}
-            onChange={setCurrentMd}
-            onFindChange={setFindStatus}
-          />
+          <div className="editor-scroll">
+            <Editor
+              ref={editorRef}
+              initialMarkdown={loadedMd}
+              currentFilePath={filePath}
+              onChange={setCurrentMd}
+              onFindChange={setFindStatus}
+            />
+          </div>
         </main>
       </div>
       <SettingsDialog
@@ -811,6 +824,7 @@ function App() {
         onIgnore={handleSpellIgnore}
         onClose={() => setSpellMenu(null)}
       />
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>
   );
 }

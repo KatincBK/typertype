@@ -1,5 +1,5 @@
 import { Plugin } from "prosemirror-state";
-import type { Node, NodeSpec } from "prosemirror-model";
+import type { MarkType, Node, NodeSpec } from "prosemirror-model";
 import type { EditorView, NodeView } from "prosemirror-view";
 import type MarkdownIt from "markdown-it";
 
@@ -47,11 +47,28 @@ function escapeHtml(s: string): string {
     .replace(/>/g, "&gt;");
 }
 
+// Heading text for the TOC, with the literal markdown markers stripped —
+// `# **Bold** title` should list as "Bold title", not "**Bold** title".
+export function headingText(node: Node, markupType?: MarkType): string {
+  let text = "";
+  node.descendants((child) => {
+    if (
+      child.isText &&
+      child.text &&
+      !(markupType && markupType.isInSet(child.marks))
+    ) {
+      text += child.text;
+    }
+  });
+  return text;
+}
+
 function renderTocBody(view: EditorView): string {
+  const markupType = view.state.schema.marks.markup;
   const headings: Array<{ level: number; text: string }> = [];
   view.state.doc.descendants((n) => {
     if (n.type.name === "heading") {
-      headings.push({ level: n.attrs.level, text: n.textContent });
+      headings.push({ level: n.attrs.level, text: headingText(n, markupType) });
     }
   });
   if (headings.length === 0) {

@@ -35,8 +35,9 @@ const SKIP_NODE_TYPES = new Set([
 ]);
 
 // Marks whose text we skip — code spans are identifiers, link hrefs are
-// URLs masquerading as words.
-const SKIP_MARK_TYPES = new Set(["code", "link"]);
+// URLs masquerading as words, and `markup` text is the literal `**` / `<u>`
+// syntax characters, not prose.
+const SKIP_MARK_TYPES = new Set(["code", "link", "markup"]);
 
 const WORD_SCAN = /[\p{L}][\p{L}\p{M}'’\-]*/gu;
 const HAS_DIGIT = /\d/;

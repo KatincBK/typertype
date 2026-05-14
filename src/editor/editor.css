@@ -19,6 +19,17 @@
   vertical-align: baseline;
 }
 
+/* Faz B — markupVisibility plugin collapses markers when the caret is away
+ * from their styled span; a blurred editor hides every marker outright so an
+ * unfocused document reads clean. */
+.editor .ProseMirror .md-markup-hidden {
+  display: none;
+}
+
+.editor .ProseMirror:not(.ProseMirror-focused) .md-markup {
+  display: none;
+}
+
 /* ---------- Math ---------- */
 
 .math-inline {

@@ -15,6 +15,7 @@ import { docToMarkdown, markdownToDoc } from "./serializer";
 import { buildKeymap } from "./keymap";
 import { buildInputRules } from "./inputRules";
 import { buildLiveFormatPlugin } from "./liveFormat";
+import { buildMarkupVisibilityPlugin } from "./markupVisibility";
 import { buildAutoPairPlugin } from "./autoPair";
 import { buildLiveMathPlugin, buildMathNodeViews } from "./math";
 import { CodeBlockView } from "./mermaid";
@@ -258,6 +259,8 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         buildLiveMathPlugin(schema),
         buildLiveEmojiPlugin(schema),
         buildLiveFormatPlugin(schema),
+        // Typora-style reveal/hide of the literal `**` `*` … markers.
+        buildMarkupVisibilityPlugin(),
         buildAutoPairPlugin(),
         buildEmojiPopupPlugin(),
         buildTocRefreshPlugin(),

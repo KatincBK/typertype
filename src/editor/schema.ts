@@ -117,5 +117,16 @@ export const schema = new Schema({
       toDOM() {
         return ["u", 0];
       },
+    })
+    // Literal markdown syntax characters (`**` `*` `~~` `==` `` ` `` `~` `^`
+    // `<u>` `</u>`) now live in the document as real, editable text. The
+    // `markup` mark tags those characters so liveFormat can style them dimly
+    // and markupVisibility (Faz B) can collapse them when the caret is away.
+    .addToEnd("markup", {
+      inclusive: false,
+      parseDOM: [{ tag: "span.md-markup" }],
+      toDOM() {
+        return ["span", { class: "md-markup" }, 0];
+      },
     }),
 });

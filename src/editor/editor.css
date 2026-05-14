@@ -3,6 +3,22 @@
  * App.css so dark / sepia / light all share the same palette.
  */
 
+/* ---------- Markup (kaynak işaretçileri) ---------- */
+
+/* Markdown işaretçileri (`**` `*` `~~` `==` `` ` `` `~` `^` `<u>`) artık
+ * belgede gerçek metin. `markup` mark'ı taşıyan bu span'ler sönük görünür —
+ * çevreleyen stil mark'ının (bold/italic/…) görsel etkisini almazlar.
+ * Faz B imleç uzaktayken bunları gizleyecek. */
+.editor .ProseMirror .md-markup {
+  color: var(--muted);
+  opacity: 0.6;
+  font-weight: normal;
+  font-style: normal;
+  text-decoration: none;
+  background: none;
+  vertical-align: baseline;
+}
+
 /* ---------- Math ---------- */
 
 .math-inline {

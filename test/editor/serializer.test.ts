@@ -21,9 +21,10 @@ describe("serializer round-trip", () => {
   });
 
   it("preserves bold / italic / inline code", () => {
-    const out = roundTrip("**bold** _italic_ `code`");
+    // The literal-marker model recognises `*` (not `_`) for emphasis.
+    const out = roundTrip("**bold** *italic* `code`");
     expect(out).toContain("**bold**");
-    expect(out).toContain("*italic*"); // serializer normalises _ to *
+    expect(out).toContain("*italic*");
     expect(out).toContain("`code`");
   });
 

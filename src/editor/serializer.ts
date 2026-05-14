@@ -12,10 +12,12 @@ import { full as markdownitEmoji } from "markdown-it-emoji";
 import markdownitFootnote from "markdown-it-footnote";
 import katex from "katex";
 import type { Node } from "prosemirror-model";
+import { EditorState } from "prosemirror-state";
 import { schema } from "./schema";
 import { mathMarkdownItPlugin } from "./math";
 import { tocMarkdownItPlugin } from "./toc";
 import { serializeTable } from "./tables";
+import { applyInlineMarks } from "./liveFormat";
 
 function listIsTight(tokens: readonly { type: string; hidden?: boolean }[], i: number): boolean {
   while (++i < tokens.length) {
@@ -165,6 +167,37 @@ function wrapTableCellsPlugin(md: MarkdownIt) {
   });
 }
 
+// Editor-parse model (Typora-style): markdown inline markers stay in the
+// document as literal text — liveFormat re-derives the marks from them. So
+// the parsing markdown-it instance has every inline-formatting rule turned
+// OFF: `**x**`, `` `x` ``, `~~x~~`, `==x==`, `~x~`, `^x^` all flow through as
+// plain `text` tokens. `<u>` / `</u>` (and any stray inline HTML) become
+// literal text too. `link`, `image`, emoji, math, footnote, table, [toc]
+// stay first-class.
+function htmlInlineToTextPlugin(md: MarkdownIt) {
+  md.core.ruler.after("inline", "html_inline_to_text", (state) => {
+    for (const tok of state.tokens) {
+      if (tok.type !== "inline" || !tok.children) continue;
+      for (const c of tok.children) {
+        if (c.type === "html_inline") c.type = "text";
+      }
+    }
+  });
+}
+
+const mdParse = MarkdownIt({ html: true })
+  .use(markdownitEmoji)
+  .use(markdownitFootnote)
+  .use(mathMarkdownItPlugin)
+  .use(tocMarkdownItPlugin)
+  .use(htmlImgPlugin)
+  .use(wrapTableCellsPlugin)
+  .use(htmlInlineToTextPlugin)
+  .disable(["emphasis", "strikethrough", "backticks"]);
+
+// Render model — full markdown-it, used by the HTML export path
+// (`markdownItInstance` below). Inline formatting rules stay ON here so
+// `md.render(markdown)` still produces `<strong>`, `<code>`, `<mark>`, etc.
 const md = MarkdownIt({ html: true })
   .use(markdownitMark)
   .use(markdownitSub)
@@ -231,7 +264,7 @@ function escapeHtml(s: string): string {
 // having to rebuild the full plugin chain.
 export const markdownItInstance = md;
 
-const parser = new MarkdownParser(schema, md, {
+const parser = new MarkdownParser(schema, mdParse, {
   blockquote: { block: "blockquote" },
   paragraph: { block: "paragraph" },
   list_item: { block: "list_item" },
@@ -329,8 +362,10 @@ const parser = new MarkdownParser(schema, md, {
       align: tok.attrGet("style")?.match(/text-align:\s*(\w+)/)?.[1] ?? null,
     }),
   },
-  em: { mark: "em" },
-  strong: { mark: "strong" },
+  // Inline-formatting marks (em / strong / code / s / mark / sub / sup /
+  // underline) are no longer produced by the parser — `mdParse` leaves their
+  // markers as literal text and liveFormat derives the marks. `link` stays
+  // on the old consumed-marker model until Faz D.
   link: {
     mark: "link",
     getAttrs: (tok) => ({
@@ -338,21 +373,31 @@ const parser = new MarkdownParser(schema, md, {
       title: tok.attrGet("title") ?? null,
     }),
   },
-  code_inline: { mark: "code", noCloseToken: true },
-  s: { mark: "strikethrough" },
-  mark: { mark: "highlight" },
-  sub: { mark: "subscript" },
-  sup: { mark: "superscript" },
-  underline: { mark: "underline" },
 });
 
 function escapeHtmlAttr(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
+// Inline-formatting marks now serialise to nothing — the `**` `*` `~~` `==`
+// `` ` `` `~` `^` `<u>` characters are literal text in the document.
+const EMPTY_MARK = {
+  open: "",
+  close: "",
+  mixable: true,
+  expelEnclosingWhitespace: false,
+};
+
 const serializer = new MarkdownSerializer(
   {
     ...defaultMarkdownSerializer.nodes,
+    // Inline text IS the markdown source now — emit it verbatim so `**`, `~~`,
+    // `` ` ``, `<u>` round-trip untouched. (Known limitation: a paragraph whose
+    // text literally starts with a block char like `#`/`>`/`-` is no longer
+    // escaped — revisited in a later phase.)
+    text: (state, node) => {
+      state.text(node.text || "", false);
+    },
     image: (state, node) => {
       const { src, alt, title, width, align } = node.attrs as {
         src: string;
@@ -432,37 +477,17 @@ const serializer = new MarkdownSerializer(
     table_header: () => {},
   },
   {
-    ...defaultMarkdownSerializer.marks,
-    strikethrough: {
-      open: "~~",
-      close: "~~",
-      mixable: true,
-      expelEnclosingWhitespace: true,
-    },
-    highlight: {
-      open: "==",
-      close: "==",
-      mixable: true,
-      expelEnclosingWhitespace: true,
-    },
-    subscript: {
-      open: "~",
-      close: "~",
-      mixable: true,
-      expelEnclosingWhitespace: true,
-    },
-    superscript: {
-      open: "^",
-      close: "^",
-      mixable: true,
-      expelEnclosingWhitespace: true,
-    },
-    underline: {
-      open: "<u>",
-      close: "</u>",
-      mixable: false,
-      expelEnclosingWhitespace: true,
-    },
+    // `link` keeps the old consumed-marker model (Faz D migrates it).
+    link: defaultMarkdownSerializer.marks.link,
+    em: EMPTY_MARK,
+    strong: EMPTY_MARK,
+    code: EMPTY_MARK,
+    strikethrough: EMPTY_MARK,
+    highlight: EMPTY_MARK,
+    subscript: EMPTY_MARK,
+    superscript: EMPTY_MARK,
+    underline: EMPTY_MARK,
+    markup: EMPTY_MARK,
   },
 );
 
@@ -471,7 +496,12 @@ export function markdownToDoc(markdown: string): Node {
   if (!parsed) {
     throw new Error("Failed to parse markdown");
   }
-  return parsed;
+  // The parser leaves inline markers as literal text; derive the style +
+  // `markup` marks once so a freshly loaded file renders formatted (the
+  // liveFormat plugin only fires on subsequent edits).
+  const tr = EditorState.create({ doc: parsed }).tr;
+  applyInlineMarks(tr, schema);
+  return tr.doc;
 }
 
 export function docToMarkdown(doc: Node): string {

@@ -34,7 +34,21 @@
       "settings": "Ayarlar",
       "insertImage": "Resim ekle",
       "print": "Yazdır"
-    }
+    },
+    "formattingTitle": "Metin Biçimlendirme",
+    "formatting": {
+      "sample": "metin",
+      "bold": "Kalın",
+      "italic": "İtalik",
+      "underline": "Altı çizili",
+      "strikethrough": "Üstü çizili",
+      "highlight": "Vurgu",
+      "code": "Satır içi kod",
+      "subscript": "Alt simge",
+      "superscript": "Üst simge",
+      "link": "Bağlantı"
+    },
+    "formattingHint": "Metni seçip işaretçiyi yaz ya da işaretçileri satır içinde gir — düzenleyici anında dönüştürür."
   },
   "find": {
     "findPlaceholder": "Bul",

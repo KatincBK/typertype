@@ -33,6 +33,24 @@ export function AboutDialog({ open, onClose }: Props) {
     ["Ctrl+P", t("about.shortcuts.print")],
   ];
 
+  const sample = t("about.formatting.sample");
+  const formatting: Array<{
+    cls: string;
+    label: string;
+    syntax: string;
+    shortcut?: string;
+  }> = [
+    { cls: "fmt-bold", label: t("about.formatting.bold"), syntax: `**${sample}**`, shortcut: "Ctrl+B" },
+    { cls: "fmt-italic", label: t("about.formatting.italic"), syntax: `*${sample}*`, shortcut: "Ctrl+I" },
+    { cls: "fmt-underline", label: t("about.formatting.underline"), syntax: `<u>${sample}</u>`, shortcut: "Ctrl+U" },
+    { cls: "fmt-strike", label: t("about.formatting.strikethrough"), syntax: `~~${sample}~~` },
+    { cls: "fmt-highlight", label: t("about.formatting.highlight"), syntax: `==${sample}==` },
+    { cls: "fmt-code", label: t("about.formatting.code"), syntax: `\`${sample}\``, shortcut: "Ctrl+Shift+`" },
+    { cls: "fmt-sub", label: t("about.formatting.subscript"), syntax: `~${sample}~` },
+    { cls: "fmt-sup", label: t("about.formatting.superscript"), syntax: `^${sample}^` },
+    { cls: "fmt-link", label: t("about.formatting.link"), syntax: `[${sample}](url)`, shortcut: "Ctrl+K" },
+  ];
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
@@ -67,6 +85,24 @@ export function AboutDialog({ open, onClose }: Props) {
               ))}
             </tbody>
           </table>
+
+          <h3 className="about-section-title">{t("about.formattingTitle")}</h3>
+          <table className="about-shortcuts about-formatting">
+            <tbody>
+              {formatting.map((f) => (
+                <tr key={f.cls}>
+                  <td>
+                    <span className={f.cls}>{f.label}</span>
+                  </td>
+                  <td>
+                    <code>{f.syntax}</code>
+                  </td>
+                  <td>{f.shortcut ? <kbd>{f.shortcut}</kbd> : <span className="fmt-none">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="about-hint">{t("about.formattingHint")}</p>
         </div>
       </div>
     </div>

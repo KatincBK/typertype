@@ -276,6 +276,83 @@ body,
   color: var(--fg);
 }
 
+/* About dialog — text formatting cheat sheet */
+
+.about-formatting td:first-child {
+  width: 110px;
+}
+
+.about-formatting td:nth-child(2) {
+  width: auto;
+}
+
+.about-formatting td:last-child {
+  width: 110px;
+  white-space: nowrap;
+}
+
+.about-formatting code {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-subtle);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.about-formatting .fmt-none {
+  color: var(--muted);
+}
+
+.fmt-bold {
+  font-weight: 700;
+}
+
+.fmt-italic {
+  font-style: italic;
+}
+
+.fmt-underline {
+  text-decoration: underline;
+}
+
+.fmt-strike {
+  text-decoration: line-through;
+}
+
+.fmt-highlight {
+  background: var(--highlight);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.fmt-code {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.fmt-sub {
+  vertical-align: sub;
+  font-size: 0.75em;
+}
+
+.fmt-sup {
+  vertical-align: super;
+  font-size: 0.75em;
+}
+
+.fmt-link {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.about-hint {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 /* MVP-8 — settings dialog */
 
 .settings-overlay {

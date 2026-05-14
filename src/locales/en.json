@@ -34,7 +34,21 @@
       "settings": "Settings",
       "insertImage": "Insert image",
       "print": "Print"
-    }
+    },
+    "formattingTitle": "Text Formatting",
+    "formatting": {
+      "sample": "text",
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "strikethrough": "Strikethrough",
+      "highlight": "Highlight",
+      "code": "Inline code",
+      "subscript": "Subscript",
+      "superscript": "Superscript",
+      "link": "Link"
+    },
+    "formattingHint": "Select text and type a marker, or type the markers inline — the editor converts them live."
   },
   "find": {
     "findPlaceholder": "Find",

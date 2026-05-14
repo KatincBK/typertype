@@ -3,7 +3,6 @@ import {
   chainCommands,
   lift,
   setBlockType,
-  toggleMark,
   wrapIn,
 } from "prosemirror-commands";
 import { redo, undo } from "prosemirror-history";
@@ -30,6 +29,7 @@ import {
   selectStyleScope,
   selectWord,
   softBreak,
+  toggleMarker,
 } from "./commands";
 import { insertTable, tableKeyboardCommands } from "./tables";
 import { logger } from "@/lib/logger";
@@ -57,12 +57,18 @@ function buildCommandRegistry(schema: Schema): Record<string, Command> {
     prevCell: tableKeyboardCommands.goToPrevCell,
     insertTable: insertTable(schema),
   };
-  if (schema.marks.strong) registry.toggleStrong = toggleMark(schema.marks.strong);
-  if (schema.marks.em) registry.toggleEmphasis = toggleMark(schema.marks.em);
-  if (schema.marks.code) registry.toggleCode = toggleMark(schema.marks.code);
-  if (schema.marks.underline) registry.toggleUnderline = toggleMark(schema.marks.underline);
+  // Literal-marker model — these edit the marker TEXT; liveFormat re-derives
+  // the mark. Registry names are unchanged so custom keymap configs still work.
+  if (schema.marks.strong) {
+    registry.toggleStrong = toggleMarker("strong", "**", "**");
+  }
+  if (schema.marks.em) registry.toggleEmphasis = toggleMarker("em", "*", "*");
+  if (schema.marks.code) registry.toggleCode = toggleMarker("code", "`", "`");
+  if (schema.marks.underline) {
+    registry.toggleUnderline = toggleMarker("underline", "<u>", "</u>");
+  }
   if (schema.marks.strikethrough) {
-    registry.toggleStrikethrough = toggleMark(schema.marks.strikethrough);
+    registry.toggleStrikethrough = toggleMarker("strikethrough", "~~", "~~");
   }
   if (schema.nodes.heading) {
     for (let level = 1; level <= 6; level++) {

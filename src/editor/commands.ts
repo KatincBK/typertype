@@ -2,13 +2,79 @@ import { TextSelection } from "prosemirror-state";
 import type { Command } from "prosemirror-state";
 import { setBlockType } from "prosemirror-commands";
 import { Fragment } from "prosemirror-model";
-import type { Schema } from "prosemirror-model";
+import type { Node, Schema } from "prosemirror-model";
 import { docToMarkdown } from "./serializer";
+import { collectStyleRuns } from "./markupVisibility";
 import i18n from "@/lib/i18n";
 
 // Custom commands for Typora-parity shortcuts (Adım 4).
 // Stateless helpers receive the schema where needed and return a Command so
 // keymap.ts can wire them up.
+
+// Faz C — in the literal-marker model the inline-formatting shortcuts (Ctrl+B
+// etc.) edit the marker TEXT, not a mark; liveFormat then re-derives the mark.
+// `findMarkRun` locates the maximal run of a style mark around a position.
+function findMarkRun(doc: Node, pos: number, markName: string) {
+  return (
+    collectStyleRuns(doc).find(
+      (r) => r.markName === markName && r.from <= pos && pos <= r.to,
+    ) ?? null
+  );
+}
+
+// Toggle an inline format: if the caret/selection is already inside that
+// mark's run, delete the run's own opening/closing marker text; otherwise
+// wrap the selection (or insert an empty pair) with the marker text.
+export const toggleMarker =
+  (markName: string, open: string, close: string): Command =>
+  (state, dispatch) => {
+    const markType = state.schema.marks[markName];
+    if (!markType) return false;
+    const { from, to, empty, $from, $to } = state.selection;
+
+    const active = empty
+      ? markType.isInSet(state.storedMarks || $from.marks())
+      : state.doc.rangeHasMark(from, to, markType);
+
+    if (active) {
+      // Toggle OFF — strip this run's own marker text.
+      const run = findMarkRun(state.doc, from, markName);
+      if (!run) return false;
+      // Defensive: the run edges must actually be the marker text.
+      if (
+        state.doc.textBetween(run.from, run.from + open.length) !== open ||
+        state.doc.textBetween(run.to - close.length, run.to) !== close
+      ) {
+        return false;
+      }
+      if (dispatch) {
+        const tr = state.tr;
+        tr.delete(run.to - close.length, run.to);
+        tr.delete(run.from, run.from + open.length);
+        dispatch(tr.scrollIntoView());
+      }
+      return true;
+    }
+
+    // Toggle ON — markers can't straddle a block boundary.
+    if (!empty && !$from.sameParent($to)) return false;
+    if (dispatch) {
+      const tr = state.tr;
+      if (empty) {
+        tr.insertText(open + close, from);
+        tr.setSelection(TextSelection.create(tr.doc, from + open.length));
+      } else {
+        tr.insertText(open, from);
+        const mappedTo = tr.mapping.map(to);
+        tr.insertText(close, mappedTo);
+        tr.setSelection(
+          TextSelection.create(tr.doc, from + open.length, mappedTo),
+        );
+      }
+      dispatch(tr.scrollIntoView());
+    }
+    return true;
+  };
 
 export const softBreak =
   (schema: Schema): Command =>
@@ -108,7 +174,9 @@ export const selectStyleScope: Command = (state, dispatch) => {
   if (!empty) return false;
   const marks = $from.marks();
   if (marks.length === 0) return false;
-  const mark = marks[0];
+  // Prefer a style mark over `markup` so Mod-e selects the whole `**bold**`
+  // span (markers included), not just a bare `**`.
+  const mark = marks.find((m) => m.type.name !== "markup") ?? marks[0];
 
   const blockStart = $from.start();
   const blockEnd = $from.end();
@@ -188,16 +256,42 @@ export const insertLink =
   };
 
 export const clearFormat =
-  (schema: Schema): Command =>
+  (_schema: Schema): Command =>
   (state, dispatch) => {
     const { from, to, empty } = state.selection;
     if (empty) return false;
+    const markupType = state.schema.marks.markup;
+    const linkType = state.schema.marks.link;
+
+    // Style-mark runs overlapping the selection — all their marker text
+    // (including nested markers) gets deleted, which makes liveFormat drop
+    // the derived marks on the next reparse.
+    const affected = collectStyleRuns(state.doc).filter(
+      (r) => r.from < to && r.to > from,
+    );
+
     if (dispatch) {
-      let tr = state.tr;
-      for (const name in schema.marks) {
-        tr = tr.removeMark(from, to, schema.marks[name]);
+      const tr = state.tr;
+      if (markupType && affected.length) {
+        const toDelete: Array<{ from: number; to: number }> = [];
+        state.doc.descendants((node, pos) => {
+          if (!node.isText || !markupType.isInSet(node.marks)) return;
+          const nFrom = pos;
+          const nTo = pos + node.nodeSize;
+          if (affected.some((r) => nFrom >= r.from && nTo <= r.to)) {
+            toDelete.push({ from: nFrom, to: nTo });
+          }
+        });
+        // Delete end → start so earlier offsets stay valid.
+        for (let i = toDelete.length - 1; i >= 0; i--) {
+          tr.delete(toDelete[i].from, toDelete[i].to);
+        }
       }
-      dispatch(tr);
+      // `link` is still on the old consumed-marker model — drop it directly.
+      if (linkType) {
+        tr.removeMark(tr.mapping.map(from), tr.mapping.map(to), linkType);
+      }
+      dispatch(tr.scrollIntoView());
     }
     return true;
   };

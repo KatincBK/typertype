@@ -21,13 +21,19 @@
 
 /* Faz B — markupVisibility plugin collapses markers when the caret is away
  * from their styled span; a blurred editor hides every marker outright so an
- * unfocused document reads clean. */
+ * unfocused document reads clean.
+ *
+ * Collapse via `font-size: 0`, NOT `display: none`: the marker text is real
+ * editable document content, and a `display:none` span has no layout box —
+ * the browser can't place the caret around it, which sends ProseMirror into
+ * a selection-correction loop and freezes the app. `font-size: 0` keeps a
+ * zero-width box the caret can sit beside. */
 .editor .ProseMirror .md-markup-hidden {
-  display: none;
+  font-size: 0;
 }
 
 .editor .ProseMirror:not(.ProseMirror-focused) .md-markup {
-  display: none;
+  font-size: 0;
 }
 
 /* ---------- Math ---------- */

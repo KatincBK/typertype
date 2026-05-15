@@ -28,6 +28,11 @@ interface LinkInfo {
 interface PopupState {
   active: LinkInfo | null;
   focusInput: boolean;
+  // When the user dismisses the popup with Esc, focusing the editor
+  // re-runs apply with the caret still inside the link — we'd reopen
+  // the popup instantly. Stash the link range we just dismissed and
+  // keep the popup closed until the caret actually leaves it.
+  suppressedFor: { from: number; to: number } | null;
 }
 
 export const linkPopupKey = new PluginKey<PopupState>("linkPopup");
@@ -236,24 +241,48 @@ export function buildLinkPopupPlugin(): Plugin<PopupState> {
       init: (_config, state) => ({
         active: findLinkAtSelection(state),
         focusInput: false,
+        suppressedFor: null,
       }),
       apply(tr, prev, _oldState, newState) {
         const meta = tr.getMeta(linkPopupKey) as { type: string } | undefined;
         if (meta?.type === "close") {
-          return { active: null, focusInput: false };
+          const current = findLinkAtSelection(newState);
+          return {
+            active: null,
+            focusInput: false,
+            suppressedFor: current
+              ? { from: current.from, to: current.to }
+              : null,
+          };
         }
         if (meta?.type === "focus") {
           const active = findLinkAtSelection(newState);
-          return { active, focusInput: !!active };
+          return { active, focusInput: !!active, suppressedFor: null };
         }
         if (meta?.type === "clearFocus") {
           return { ...prev, focusInput: false };
         }
+
         const newActive = findLinkAtSelection(newState);
-        if (infoEq(prev.active, newActive)) {
+
+        // Caret still parked inside the link the user just dismissed →
+        // hold the popup closed instead of letting normal flow reopen it.
+        if (
+          prev.suppressedFor &&
+          newActive &&
+          prev.suppressedFor.from === newActive.from &&
+          prev.suppressedFor.to === newActive.to
+        ) {
+          if (prev.active === null && !prev.focusInput) return prev;
+          return { active: null, focusInput: false, suppressedFor: prev.suppressedFor };
+        }
+
+        // Caret left the dismissed link (or it changed) → suppression
+        // expires; fall through to normal popup tracking.
+        if (infoEq(prev.active, newActive) && prev.suppressedFor === null) {
           return prev;
         }
-        return { active: newActive, focusInput: false };
+        return { active: newActive, focusInput: false, suppressedFor: null };
       },
     },
     props: {

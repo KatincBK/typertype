@@ -513,3 +513,57 @@
 .table-toolbar-btn:hover {
   background: var(--bg-hover);
 }
+
+/* ---------- Link popup (Faz G) ----------
+ * Shows under the link when the caret touches a `link` mark run. URL
+ * input applies on Enter / blur; buttons hand off to the system browser
+ * or strip the mark.
+ */
+.link-popup {
+  position: fixed;
+  z-index: 1000;
+  background: var(--bg-modal);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: var(--shadow-md);
+  padding: 4px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: 0.9em;
+}
+
+.link-popup-input {
+  appearance: none;
+  background: var(--bg);
+  color: inherit;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: inherit;
+  min-width: 220px;
+}
+
+.link-popup-input:focus {
+  outline: none;
+  border-color: var(--accent, #4a90e2);
+}
+
+.link-popup-btn {
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.link-popup-btn:hover {
+  background: var(--bg-hover);
+}

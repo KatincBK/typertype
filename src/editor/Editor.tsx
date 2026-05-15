@@ -22,6 +22,7 @@ import { buildMathDecorationsPlugin } from "./mathDecorations";
 import { CodeBlockView } from "./mermaid";
 import { buildEmojiPopupPlugin } from "./emoji";
 import { buildEmojiDecorationsPlugin } from "./emojiDecorations";
+import { buildLinkPopupPlugin } from "./linkPopup";
 import { buildTocNodeView, buildTocRefreshPlugin } from "./toc";
 import { buildFootnoteNodeView } from "./footnote";
 import { buildTablePlugins, buildTableToolbarPlugin } from "./tables";
@@ -264,6 +265,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         buildMarkupVisibilityPlugin(),
         buildAutoPairPlugin(),
         buildEmojiPopupPlugin(),
+        buildLinkPopupPlugin(),
         buildTocRefreshPlugin(),
         buildFocusBlockPlugin(),
         buildTableToolbarPlugin(),

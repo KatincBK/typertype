@@ -185,6 +185,13 @@
   "commands": {
     "linkPrompt": "Bağlantı URL'si:"
   },
+  "link": {
+    "popup": {
+      "urlPlaceholder": "https://...",
+      "open": "Aç",
+      "remove": "Kaldır"
+    }
+  },
   "errors": {
     "openFile": "Dosya açılamadı: {{detail}}",
     "saveFile": "Dosya kaydedilemedi: {{detail}}",

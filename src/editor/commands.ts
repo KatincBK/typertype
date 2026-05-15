@@ -5,7 +5,7 @@ import { Fragment } from "prosemirror-model";
 import type { Node, Schema } from "prosemirror-model";
 import { docToMarkdown } from "./serializer";
 import { collectStyleRuns } from "./markupVisibility";
-import i18n from "@/lib/i18n";
+import { linkPopupKey } from "./linkPopup";
 
 // Custom commands for Typora-parity shortcuts (Adım 4).
 // Stateless helpers receive the schema where needed and return a Command so
@@ -245,12 +245,25 @@ export const insertLink =
     const linkType = schema.marks.link;
     if (!linkType) return false;
     const { from, to, empty } = state.selection;
+
+    // Cursor sits inside an existing link → focus the popup's URL input
+    // instead of stomping the link with a new mark.
+    const $from = state.doc.resolve(from);
+    const insideLink = $from.marks().some((m) => m.type === linkType);
+    if (insideLink) {
+      if (dispatch) {
+        dispatch(state.tr.setMeta(linkPopupKey, { type: "focus" }));
+      }
+      return true;
+    }
+
+    // Selection covers text → wrap it in an empty-href link mark. The popup
+    // appears automatically (the selection now touches a link run) and the
+    // user types the URL there. Empty selection without an existing link
+    // has nothing to attach to, so we bail.
     if (empty) return false;
-    // MVP: window.prompt — gerçek modal Adım 13 sonrası UI fazında gelecek
-    const url = window.prompt(i18n.t("commands.linkPrompt"));
-    if (!url) return true;
     if (dispatch) {
-      dispatch(state.tr.addMark(from, to, linkType.create({ href: url })));
+      dispatch(state.tr.addMark(from, to, linkType.create({ href: "" })));
     }
     return true;
   };

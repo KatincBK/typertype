@@ -185,6 +185,13 @@
   "commands": {
     "linkPrompt": "Link URL:"
   },
+  "link": {
+    "popup": {
+      "urlPlaceholder": "https://...",
+      "open": "Open",
+      "remove": "Remove"
+    }
+  },
   "errors": {
     "openFile": "Could not open file: {{detail}}",
     "saveFile": "Could not save file: {{detail}}",

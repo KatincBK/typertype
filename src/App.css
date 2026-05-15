@@ -490,6 +490,26 @@ body,
   margin-bottom: 0.9rem;
 }
 
+/* Visually break long tab content into named sections (e.g. file
+ * associations below the auto-save / recovery sliders). */
+.settings-section-break {
+  margin-top: 1.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.settings-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.4rem;
+}
+
+.settings-section-break .settings-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
 .settings-path {
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.75rem;

@@ -102,7 +102,12 @@
       "autoSaveDelay": "Auto-save delay — {{seconds}}s",
       "autoSaveHint": "Time after editing stops before the file is written (only files saved to disk).",
       "recoveryDelay": "Recovery snapshot delay — {{seconds}}s",
-      "recoveryHint": "How often unsaved content is written to the recovery file."
+      "recoveryHint": "How often unsaved content is written to the recovery file.",
+      "fileAssoc": {
+        "title": "File Associations",
+        "description": "To open .md, .markdown and .txt files with Typertype by default, use the Windows Default Apps setting. On the page that opens, pick Typertype for each file type.",
+        "openWindowsSettings": "Open Windows Default Apps"
+      }
     },
     "spellcheck": {
       "language": "Spell-check language",

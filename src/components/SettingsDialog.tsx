@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   type Settings,
   type SettingsApi,
@@ -10,6 +11,7 @@ import {
   openUserConfig,
   type ConfigPaths,
 } from "@/lib/configPaths";
+import { logger } from "@/lib/logger";
 
 // MVP-8 — Settings modal. Live-update: every input change is applied to
 // CSS variables (for appearance) or to the Settings ref reads (for file
@@ -325,6 +327,28 @@ function FilesTab({
         />
       </Field>
       <p className="settings-hint">{t("settings.files.recoveryHint")}</p>
+
+      <div className="settings-section-break">
+        <h3 className="settings-section-title">
+          {t("settings.files.fileAssoc.title")}
+        </h3>
+        <p className="settings-hint">
+          {t("settings.files.fileAssoc.description")}
+        </p>
+        <div className="settings-row">
+          <button
+            type="button"
+            className="settings-btn-secondary"
+            onClick={() =>
+              void openUrl("ms-settings:defaultapps").catch((err) =>
+                logger.warn("openUrl(ms-settings) failed:", err),
+              )
+            }
+          >
+            {t("settings.files.fileAssoc.openWindowsSettings")}
+          </button>
+        </div>
+      </div>
     </>
   );
 }

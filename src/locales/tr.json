@@ -102,7 +102,12 @@
       "autoSaveDelay": "Otomatik kaydetme gecikmesi — {{seconds}}s",
       "autoSaveHint": "Düzenleme durduktan sonra dosyaya yazılana kadar geçen süre (yalnızca diske kaydedilmiş dosyalar).",
       "recoveryDelay": "Kurtarma anlık görüntüsü gecikmesi — {{seconds}}s",
-      "recoveryHint": "Kaydedilmemiş içerik için kurtarma dosyasına yazma sıklığı."
+      "recoveryHint": "Kaydedilmemiş içerik için kurtarma dosyasına yazma sıklığı.",
+      "fileAssoc": {
+        "title": "Dosya İlişkilendirme",
+        "description": ".md, .markdown ve .txt dosyalarını Typertype ile açmak için Windows'un Varsayılan Uygulamalar ayarını kullanın. Açılan sayfada ilgili dosya türleri için Typertype'ı seçin.",
+        "openWindowsSettings": "Windows Varsayılan Uygulamalar'ı Aç"
+      }
     },
     "spellcheck": {
       "language": "Yazım denetimi dili",

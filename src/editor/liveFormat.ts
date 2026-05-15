@@ -1,6 +1,7 @@
 import { Plugin } from "prosemirror-state";
 import type { Schema } from "prosemirror-model";
 import type { Transaction } from "prosemirror-state";
+import { MATH_INLINE_RE } from "./mathDecorations";
 
 // Typora-style "the text is the source" model: markdown markers (`**` `*`
 // `~~` `==` `` ` `` `~` `^` `<u></u>`) live in the document as real, editable
@@ -133,8 +134,11 @@ interface Segment {
 }
 
 // Split every (non-code) textblock's inline content into runs of consecutive
-// text — inline atoms (emoji / math / image / hard_break) break a run, since
-// a marker pair can't straddle them.
+// text — inline atoms (emoji / image / hard_break) break a run, since a
+// marker pair can't straddle them. Inline `$...$` math is *not* an atom
+// (it's literal text owned by mathDecorations), but its content is LaTeX
+// source — we carve those ranges out so a stray `^` inside math doesn't
+// become a superscript marker.
 function collectSegments(doc: Transaction["doc"]): Segment[] {
   const segments: Segment[] = [];
   doc.descendants((node, pos) => {
@@ -144,17 +148,38 @@ function collectSegments(doc: Transaction["doc"]): Segment[] {
     const contentStart = pos + 1;
     let segText = "";
     let segFrom = -1;
+    const flush = () => {
+      if (segFrom === -1) return;
+      let last = 0;
+      MATH_INLINE_RE.lastIndex = 0;
+      for (const match of segText.matchAll(MATH_INLINE_RE)) {
+        if (match.index === undefined) continue;
+        if (match.index > last) {
+          segments.push({
+            text: segText.slice(last, match.index),
+            from: segFrom + last,
+          });
+        }
+        last = match.index + match[0].length;
+      }
+      if (last < segText.length) {
+        segments.push({
+          text: segText.slice(last),
+          from: segFrom + last,
+        });
+      }
+      segText = "";
+      segFrom = -1;
+    };
     node.forEach((child, offset) => {
       if (child.isText && child.text) {
         if (segFrom === -1) segFrom = contentStart + offset;
         segText += child.text;
       } else if (segFrom !== -1) {
-        segments.push({ text: segText, from: segFrom });
-        segText = "";
-        segFrom = -1;
+        flush();
       }
     });
-    if (segFrom !== -1) segments.push({ text: segText, from: segFrom });
+    flush();
     return false;
   });
   return segments;
@@ -227,9 +252,42 @@ function reconcileSegment(
 // Public core — reused by both the plugin and `markdownToDoc`. Mutates `tr`,
 // adding only mark steps (never content steps).
 export function applyInlineMarks(tr: Transaction, schema: Schema): void {
+  stripMarksInsideMath(tr, schema);
   for (const seg of collectSegments(tr.doc)) {
     reconcileSegment(tr, schema, seg.text, seg.from);
   }
+}
+
+// `collectSegments` carves math runs out so liveFormat never *adds* marks
+// inside them. But a previously-marked doc (e.g. one parsed before the
+// math literal model existed, or one where the user just typed the closing
+// `$`) can have MANAGED marks lingering inside what is now a math run.
+// Strip them up-front so the run renders as pure source.
+function stripMarksInsideMath(tr: Transaction, schema: Schema): void {
+  tr.doc.descendants((node, pos, parent) => {
+    if (
+      parent &&
+      (parent.type.name === "code_block" || parent.type.name === "math_block")
+    ) {
+      return false;
+    }
+    if (node.type.name === "code_block" || node.type.name === "math_block") {
+      return false;
+    }
+    if (!node.isText || !node.text) return;
+    if (node.marks.some((m) => m.type.name === "code")) return;
+
+    MATH_INLINE_RE.lastIndex = 0;
+    for (const match of node.text.matchAll(MATH_INLINE_RE)) {
+      if (match.index === undefined) continue;
+      const from = pos + match.index;
+      const to = from + match[0].length;
+      for (const name of MANAGED) {
+        const markType = schema.marks[name];
+        if (markType) tr.removeMark(from, to, markType);
+      }
+    }
+  });
 }
 
 export function buildLiveFormatPlugin(schema: Schema): Plugin {

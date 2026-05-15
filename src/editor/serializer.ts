@@ -14,7 +14,7 @@ import katex from "katex";
 import type { Node } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import { schema } from "./schema";
-import { mathMarkdownItPlugin } from "./math";
+import { mathInlineMarkdownItPlugin, mathMarkdownItPlugin } from "./math";
 import { tocMarkdownItPlugin } from "./toc";
 import { serializeTable } from "./tables";
 import { applyInlineMarks } from "./liveFormat";
@@ -172,8 +172,9 @@ function wrapTableCellsPlugin(md: MarkdownIt) {
 // the parsing markdown-it instance has every inline-formatting rule turned
 // OFF: `**x**`, `` `x` ``, `~~x~~`, `==x==`, `~x~`, `^x^` all flow through as
 // plain `text` tokens. `<u>` / `</u>` (and any stray inline HTML) become
-// literal text too. `link`, `image`, emoji, math, footnote, table, [toc]
-// stay first-class.
+// literal text too. Inline `$...$` math is *also* literal — mathDecorations
+// renders it from the raw text. `link`, `image`, emoji, math_block,
+// footnote, table, [toc] stay first-class.
 function htmlInlineToTextPlugin(md: MarkdownIt) {
   md.core.ruler.after("inline", "html_inline_to_text", (state) => {
     for (const tok of state.tokens) {
@@ -204,6 +205,7 @@ const md = MarkdownIt({ html: true })
   .use(markdownitSup)
   .use(markdownitEmoji)
   .use(markdownitFootnote)
+  .use(mathInlineMarkdownItPlugin)
   .use(mathMarkdownItPlugin)
   .use(tocMarkdownItPlugin)
   .use(htmlImgPlugin)
@@ -301,10 +303,6 @@ const parser = new MarkdownParser(schema, mdParse, {
     }),
   },
   hardbreak: { node: "hard_break" },
-  math_inline: {
-    node: "math_inline",
-    getAttrs: (tok) => ({ tex: tok.content }),
-  },
   math_block: { block: "math_block", noCloseToken: true },
   emoji: {
     node: "emoji",
@@ -430,9 +428,6 @@ const serializer = new MarkdownSerializer(
       else if (align === "center") styles.push("display: block; margin: 0 auto");
       if (styles.length) parts.push(`style="${escapeHtmlAttr(styles.join("; "))};"`);
       state.write(`<img ${parts.join(" ")} />`);
-    },
-    math_inline: (state, node) => {
-      state.write("$" + node.attrs.tex + "$");
     },
     math_block: (state, node) => {
       state.write("$$\n" + node.textContent + "\n$$");

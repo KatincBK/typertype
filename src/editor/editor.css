@@ -36,18 +36,45 @@
   font-size: 0;
 }
 
-/* ---------- Math ---------- */
+/* ---------- Math (inline) ----------
+ * Faz E — inline `$...$` is literal text, not a node. mathDecorations
+ * picks the run apart at render time:
+ *   .md-math-source           wrapper on every `$...$` text run
+ *   …-active                  caret is inside → show the raw source
+ *   …-hidden                  caret is outside + render OK → collapse source
+ *                             so only the KaTeX widget shows
+ *   …-error                   render failed → keep source visible, red box,
+ *                             KaTeX error in the `title` tooltip
+ *   .md-math-rendered         KaTeX widget that sits next to the source
+ */
+.editor .ProseMirror .md-math-source-active {
+  color: var(--muted);
+  font-family: var(--font-mono, monospace);
+}
 
-.math-inline {
+.editor .ProseMirror .md-math-source-hidden {
+  font-size: 0;
+}
+
+.editor .ProseMirror .md-math-source-error {
+  outline: 1px solid #e0533d;
+  outline-offset: 1px;
+  border-radius: 2px;
+  background: rgba(224, 83, 61, 0.08);
+}
+
+.editor .ProseMirror .md-math-rendered {
   display: inline-block;
   cursor: pointer;
   padding: 0 0.1em;
   border-radius: 2px;
 }
 
-.math-inline:hover {
+.editor .ProseMirror .md-math-rendered:hover {
   background: var(--bg-hover);
 }
+
+/* ---------- Math (block) ---------- */
 
 .math-block {
   margin: 0.8em 0;

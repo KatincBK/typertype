@@ -17,7 +17,8 @@ import { buildInputRules } from "./inputRules";
 import { buildLiveFormatPlugin } from "./liveFormat";
 import { buildMarkupVisibilityPlugin } from "./markupVisibility";
 import { buildAutoPairPlugin } from "./autoPair";
-import { buildLiveMathPlugin, buildMathNodeViews } from "./math";
+import { buildMathNodeViews } from "./math";
+import { buildMathDecorationsPlugin } from "./mathDecorations";
 import { CodeBlockView } from "./mermaid";
 import {
   buildEmojiNodeView,
@@ -254,9 +255,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       doc: markdownToDoc(initialMarkdown),
       plugins: [
         buildInputRules(schema),
-        // liveMath before liveFormat so $..$ contents (^ _) aren't grabbed
-        // by sup/sub marks first. liveEmoji is independent of those.
-        buildLiveMathPlugin(schema),
+        // Inline `$...$` math is literal text; mathDecorations paints the
+        // KaTeX render over it and reveals the source when the caret enters
+        // the run. liveFormat itself carves math runs out of segment-mark
+        // reconciliation so a stray `^`/`~` inside math doesn't become a
+        // sup/sub marker.
+        buildMathDecorationsPlugin(),
         buildLiveEmojiPlugin(schema),
         buildLiveFormatPlugin(schema),
         // Typora-style reveal/hide of the literal `**` `*` … markers.

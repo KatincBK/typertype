@@ -3,6 +3,7 @@ import { Decoration, DecorationSet } from "prosemirror-view";
 import type { EditorView } from "prosemirror-view";
 import type { Node } from "prosemirror-model";
 import { checkWord, onSpellChange } from "@/lib/spellChecker";
+import { MATH_INLINE_RE } from "./mathDecorations";
 
 export interface SpellContextDetail {
   word: string;
@@ -22,11 +23,11 @@ export interface SpellContextDetail {
 export const spellPluginKey = new PluginKey<DecorationSet>("spell");
 
 // Block / inline node names whose textual content is *not* prose and
-// shouldn't get squiggles.
+// shouldn't get squiggles. Inline `$...$` math is *not* a node anymore —
+// the scanner carves those ranges out per-text-node below.
 const SKIP_NODE_TYPES = new Set([
   "code_block",
   "math_block",
-  "math_inline",
   "emoji",
   "footnote_ref",
   "toc",
@@ -57,9 +58,22 @@ function scanDoc(doc: Node): DecorationSet {
     if (node.marks.some((m) => SKIP_MARK_TYPES.has(m.type.name))) return false;
 
     const text = node.text || "";
+
+    // Carve inline math ranges out — the LaTeX source is identifiers,
+    // not prose words.
+    const mathRanges: Array<[number, number]> = [];
+    MATH_INLINE_RE.lastIndex = 0;
+    for (const mm of text.matchAll(MATH_INLINE_RE)) {
+      if (mm.index === undefined) continue;
+      mathRanges.push([mm.index, mm.index + mm[0].length]);
+    }
+    const inMath = (i: number) =>
+      mathRanges.some(([a, b]) => i >= a && i < b);
+
     let m: RegExpExecArray | null;
     WORD_SCAN.lastIndex = 0;
     while ((m = WORD_SCAN.exec(text)) !== null) {
+      if (inMath(m.index)) continue;
       const word = m[0];
       if (shouldSkipWord(word)) continue;
       if (checkWord(word)) continue;

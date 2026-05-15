@@ -5,15 +5,15 @@
 // the signature against the pubkey baked into the binary.
 //
 // Inputs (env):
-//   TYLIKE_VERSION         — version tag without leading "v" (e.g. 0.2.0)
-//   TYLIKE_NSIS_PATH       — path to the .exe NSIS installer
-//   TYLIKE_NSIS_SIG_PATH   — path to the .exe.sig file produced by Tauri
-//   TYLIKE_DOWNLOAD_BASE   — public URL prefix the installer is published
+//   TYPERTYPE_VERSION         — version tag without leading "v" (e.g. 0.2.0)
+//   TYPERTYPE_NSIS_PATH       — path to the .exe NSIS installer
+//   TYPERTYPE_NSIS_SIG_PATH   — path to the .exe.sig file produced by Tauri
+//   TYPERTYPE_DOWNLOAD_BASE   — public URL prefix the installer is published
 //                            under (e.g. https://github.com/USER/REPO/
 //                            releases/download/v0.2.0)
-//   TYLIKE_RELEASE_NOTES   — optional notes string (defaults to version)
+//   TYPERTYPE_RELEASE_NOTES   — optional notes string (defaults to version)
 //
-// Tauri will produce TYLIKE_NSIS_SIG_PATH automatically when the build
+// Tauri will produce TYPERTYPE_NSIS_SIG_PATH automatically when the build
 // runs with TAURI_SIGNING_PRIVATE_KEY + TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 // in the environment. Without those two, no .sig is emitted and this
 // script intentionally fails — the whole point of latest.json is the
@@ -31,11 +31,11 @@ function need(key) {
   return v;
 }
 
-const version = need("TYLIKE_VERSION").replace(/^v/, "");
-const installer = need("TYLIKE_NSIS_PATH");
-const sigFile = need("TYLIKE_NSIS_SIG_PATH");
-const downloadBase = need("TYLIKE_DOWNLOAD_BASE").replace(/\/+$/, "");
-const notes = process.env.TYLIKE_RELEASE_NOTES ?? `Tylike ${version}`;
+const version = need("TYPERTYPE_VERSION").replace(/^v/, "");
+const installer = need("TYPERTYPE_NSIS_PATH");
+const sigFile = need("TYPERTYPE_NSIS_SIG_PATH");
+const downloadBase = need("TYPERTYPE_DOWNLOAD_BASE").replace(/\/+$/, "");
+const notes = process.env.TYPERTYPE_RELEASE_NOTES ?? `Typertype ${version}`;
 
 statSync(installer); // throws if missing — fail loudly, not silently
 const signature = readFileSync(sigFile, "utf8").trim();

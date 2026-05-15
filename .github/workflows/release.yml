@@ -98,18 +98,18 @@ jobs:
       - name: Generate latest.json
         if: steps.artifacts.outputs.sig != ''
         env:
-          TYLIKE_VERSION: ${{ steps.ver.outputs.version }}
-          TYLIKE_NSIS_PATH: ${{ steps.artifacts.outputs.nsis }}
-          TYLIKE_NSIS_SIG_PATH: ${{ steps.artifacts.outputs.sig }}
-          TYLIKE_DOWNLOAD_BASE: https://github.com/${{ github.repository }}/releases/download/${{ steps.ver.outputs.tag }}
-          TYLIKE_RELEASE_NOTES: "Tylike ${{ steps.ver.outputs.version }}"
+          TYPERTYPE_VERSION: ${{ steps.ver.outputs.version }}
+          TYPERTYPE_NSIS_PATH: ${{ steps.artifacts.outputs.nsis }}
+          TYPERTYPE_NSIS_SIG_PATH: ${{ steps.artifacts.outputs.sig }}
+          TYPERTYPE_DOWNLOAD_BASE: https://github.com/${{ github.repository }}/releases/download/${{ steps.ver.outputs.tag }}
+          TYPERTYPE_RELEASE_NOTES: "Typertype ${{ steps.ver.outputs.version }}"
         run: node scripts/release-manifest.mjs latest.json
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          name: Tylike ${{ steps.ver.outputs.version }}
+          name: Typertype ${{ steps.ver.outputs.version }}
           generate_release_notes: true
           files: |
             ${{ steps.artifacts.outputs.msi }}

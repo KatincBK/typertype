@@ -6,7 +6,7 @@ import type { AppLanguage } from "./settings";
 // useState initializer; switching the UI language later doesn't
 // rewrite the doc the user is already editing.
 
-const TR = `# Tylike
+const TR = `# Typertype
 
 Bu bir **markdown editörü**. Yazmaya _başla_.
 
@@ -90,7 +90,7 @@ Bu cümlede bir dipnot[^1] var, ardından bir tane daha[^typora].
 - Undo/redo: \`Ctrl+Z\` / \`Ctrl+Y\`
 `;
 
-const EN = `# Tylike
+const EN = `# Typertype
 
 This is a **markdown editor**. Just _start_ typing.
 

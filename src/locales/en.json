@@ -10,7 +10,7 @@
     "saveAs": "Save As"
   },
   "header": {
-    "appName": "Tylike",
+    "appName": "Typertype",
     "characters": "{{count}} characters",
     "themeTitle": "Theme",
     "themeAuto": "Auto",
@@ -20,7 +20,7 @@
     "helpTitle": "Help"
   },
   "about": {
-    "title": "About Tylike",
+    "title": "About Typertype",
     "tagline": "Typora-compatible, open-source Windows Markdown editor.",
     "shortcutsTitle": "Keyboard Shortcuts",
     "shortcuts": {

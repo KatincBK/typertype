@@ -10,7 +10,7 @@
     "saveAs": "Farklı Kaydet"
   },
   "header": {
-    "appName": "Tylike",
+    "appName": "Typertype",
     "characters": "{{count}} karakter",
     "themeTitle": "Tema",
     "themeAuto": "Otomatik",
@@ -20,7 +20,7 @@
     "helpTitle": "Yardım"
   },
   "about": {
-    "title": "Tylike Hakkında",
+    "title": "Typertype Hakkında",
     "tagline": "Typora uyumlu, açık kaynak Windows Markdown editörü.",
     "shortcutsTitle": "Klavye Kısayolları",
     "shortcuts": {

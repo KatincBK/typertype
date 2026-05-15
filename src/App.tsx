@@ -718,7 +718,12 @@ function App() {
   return (
     <div className={`app-shell${sidebarOpen ? " has-sidebar" : ""}`}>
       <header className="app-header">
-        <h1 className="app-title">{t("header.appName")}</h1>
+        <img
+          className="app-logo"
+          src="/typertype-logo.png"
+          alt={t("header.appName")}
+          title={t("header.appName")}
+        />
         <span className="app-file" title={filePath ?? UNTITLED_LABEL}>
           {fileLabel}
           {dirty ? <span className="app-dirty"> ●</span> : null}

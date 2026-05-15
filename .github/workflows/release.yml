@@ -88,26 +88,55 @@ jobs:
         id: artifacts
         shell: bash
         run: |
-          # nullglob makes a no-match expand to an empty array instead of
-          # the literal pattern, which keeps the script working under
-          # `set -e -o pipefail` (the default for `shell: bash`) when the
-          # .exe.sig file is absent (e.g. an unsigned build).
           shopt -s nullglob
-          msi_arr=( src-tauri/target/release/bundle/msi/*.msi )
-          nsis_arr=( src-tauri/target/release/bundle/nsis/*.exe )
-          sig_arr=( src-tauri/target/release/bundle/nsis/*.exe.sig )
-          msi="${msi_arr[0]:-}"
-          nsis="${nsis_arr[0]:-}"
+
+          # Everything we ship in the GitHub Release: every MSI locale +
+          # NSIS .exe + Tauri 2 updater bundle (.nsis.zip) + signature
+          # files. nullglob keeps no-match patterns from leaking through.
+          all_arr=(
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*.nsis.zip
+            src-tauri/target/release/bundle/nsis/*.sig
+          )
+
+          # Updater client (tauri-plugin-updater v2) fetches the URL from
+          # latest.json. With createUpdaterArtifacts:true Tauri ships
+          # *.nsis.zip + *.nsis.zip.sig; with "v1Compatible" it stays on
+          # *.exe + *.exe.sig. Pick whichever pair exists.
+          sig_arr=( src-tauri/target/release/bundle/nsis/*.sig )
+          zip_arr=( src-tauri/target/release/bundle/nsis/*.nsis.zip )
+          exe_arr=( src-tauri/target/release/bundle/nsis/*.exe )
+
           sig="${sig_arr[0]:-}"
-          echo "msi=$msi"   >> "$GITHUB_OUTPUT"
-          echo "nsis=$nsis" >> "$GITHUB_OUTPUT"
-          echo "sig=$sig"   >> "$GITHUB_OUTPUT"
+          updater_installer=""
+          if [ -n "$sig" ]; then
+            if [ ${#zip_arr[@]} -gt 0 ]; then
+              updater_installer="${zip_arr[0]}"
+            else
+              updater_installer="${exe_arr[0]:-}"
+            fi
+          fi
+
+          echo "::group::Bundle artifacts"
+          printf '  %s\n' "${all_arr[@]}"
+          echo "sig:               $sig"
+          echo "updater_installer: $updater_installer"
+          echo "::endgroup::"
+
+          {
+            echo "all<<EOF"
+            printf '%s\n' "${all_arr[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "sig=$sig" >> "$GITHUB_OUTPUT"
+          echo "updater_installer=$updater_installer" >> "$GITHUB_OUTPUT"
 
       - name: Generate latest.json
         if: steps.artifacts.outputs.sig != ''
         env:
           TYPERTYPE_VERSION: ${{ steps.ver.outputs.version }}
-          TYPERTYPE_NSIS_PATH: ${{ steps.artifacts.outputs.nsis }}
+          TYPERTYPE_NSIS_PATH: ${{ steps.artifacts.outputs.updater_installer }}
           TYPERTYPE_NSIS_SIG_PATH: ${{ steps.artifacts.outputs.sig }}
           TYPERTYPE_DOWNLOAD_BASE: https://github.com/${{ github.repository }}/releases/download/${{ steps.ver.outputs.tag }}
           TYPERTYPE_RELEASE_NOTES: "Typertype ${{ steps.ver.outputs.version }}"
@@ -120,8 +149,6 @@ jobs:
           name: Typertype ${{ steps.ver.outputs.version }}
           generate_release_notes: true
           files: |
-            ${{ steps.artifacts.outputs.msi }}
-            ${{ steps.artifacts.outputs.nsis }}
-            ${{ steps.artifacts.outputs.sig }}
+            ${{ steps.artifacts.outputs.all }}
             latest.json
           fail_on_unmatched_files: false

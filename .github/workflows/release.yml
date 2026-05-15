@@ -88,9 +88,17 @@ jobs:
         id: artifacts
         shell: bash
         run: |
-          msi=$(ls src-tauri/target/release/bundle/msi/*.msi | head -n1)
-          nsis=$(ls src-tauri/target/release/bundle/nsis/*.exe | head -n1)
-          sig=$(ls src-tauri/target/release/bundle/nsis/*.exe.sig 2>/dev/null | head -n1)
+          # nullglob makes a no-match expand to an empty array instead of
+          # the literal pattern, which keeps the script working under
+          # `set -e -o pipefail` (the default for `shell: bash`) when the
+          # .exe.sig file is absent (e.g. an unsigned build).
+          shopt -s nullglob
+          msi_arr=( src-tauri/target/release/bundle/msi/*.msi )
+          nsis_arr=( src-tauri/target/release/bundle/nsis/*.exe )
+          sig_arr=( src-tauri/target/release/bundle/nsis/*.exe.sig )
+          msi="${msi_arr[0]:-}"
+          nsis="${nsis_arr[0]:-}"
+          sig="${sig_arr[0]:-}"
           echo "msi=$msi"   >> "$GITHUB_OUTPUT"
           echo "nsis=$nsis" >> "$GITHUB_OUTPUT"
           echo "sig=$sig"   >> "$GITHUB_OUTPUT"

@@ -32,7 +32,18 @@ export function buildFocusBlockPlugin(): Plugin {
       };
       apply(editorView);
       return {
-        update(view) {
+        update(view, prevState) {
+          // Only re-scan when something that can change which block holds the
+          // caret actually changed. Running on every transaction (incl. plugin
+          // decoration updates) caused a feedback loop: toggling `has-cursor`
+          // flips CSS `display:none` on the contentDOM, which in turn triggers
+          // a PM re-sync, which is another update… and so on.
+          if (
+            prevState.selection.eq(view.state.selection) &&
+            prevState.doc.eq(view.state.doc)
+          ) {
+            return;
+          }
           apply(view);
         },
         destroy() {

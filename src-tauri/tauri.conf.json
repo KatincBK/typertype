@@ -73,7 +73,7 @@
       "endpoints": [
         "https://github.com/KatincBK/typertype/releases/latest/download/latest.json"
       ],
-      "pubkey": "REPLACE_WITH_BASE64_PUBKEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc5N0MyRjg3Q0VEQjA3N0MKUldSOEI5dk9oeTk4ZVh2SzVBWEhNM09tQzZONUJ2aGhuQjNJUVUxbXJFa1FIaGpEYjFzOEY3aDYK",
       "windows": {
         "installMode": "passive"
       }

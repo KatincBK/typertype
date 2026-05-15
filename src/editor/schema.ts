@@ -1,7 +1,6 @@
 import { Schema, type NodeSpec } from "prosemirror-model";
 import { schema as baseSchema } from "prosemirror-markdown";
 import { mathBlockSpec } from "./math";
-import { emojiNodeSpec } from "./emoji";
 import { tocNodeSpec } from "./toc";
 import { footnoteDefSpec, footnoteRefSpec } from "./footnote";
 import { tableNodeSpecMap } from "./tables";
@@ -68,7 +67,6 @@ const imageSpec: NodeSpec = {
 const nodes = baseSchema.spec.nodes
   .update("image", imageSpec)
   .addToEnd("math_block", mathBlockSpec)
-  .addToEnd("emoji", emojiNodeSpec)
   .addToEnd("toc", tocNodeSpec)
   .addToEnd("footnote_ref", footnoteRefSpec)
   .addToEnd("footnote_def", footnoteDefSpec)

@@ -172,11 +172,28 @@
   opacity: 0.6;
 }
 
-/* ---------- Emoji ---------- */
+/* ---------- Emoji ----------
+ * Faz F — `:shortcode:` is literal text; emojiDecorations renders the
+ * unicode glyph over it (mirroring mathDecorations / Faz E).
+ */
+.editor .ProseMirror .md-emoji-source-active {
+  color: var(--muted);
+  font-family: var(--font-mono, monospace);
+}
 
-.emoji {
+.editor .ProseMirror .md-emoji-source-hidden {
+  font-size: 0;
+}
+
+.editor .ProseMirror .md-emoji-rendered {
   display: inline-block;
-  cursor: default;
+  cursor: pointer;
+  padding: 0 0.05em;
+  border-radius: 2px;
+}
+
+.editor .ProseMirror .md-emoji-rendered:hover {
+  background: var(--bg-hover);
 }
 
 .emoji-popup {

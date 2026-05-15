@@ -89,25 +89,11 @@ function buildDecorationSet(state: EditorState): DecorationSet {
       decos.push(
         Decoration.widget(
           r.to,
-          (view, getPos) => {
+          () => {
             const span = document.createElement("span");
             span.className = "md-math-rendered";
             span.contentEditable = "false";
             span.innerHTML = renderedHtml;
-            span.addEventListener("mousedown", (e) => {
-              e.preventDefault();
-              const widgetPos = getPos();
-              if (typeof widgetPos !== "number") return;
-              // Widget sits at the closing `$` — drop the caret one char in
-              // so the run becomes active and the source pane appears.
-              const caret = Math.max(widgetPos - 1, 0);
-              view.dispatch(
-                view.state.tr.setSelection(
-                  TextSelection.create(view.state.doc, caret),
-                ),
-              );
-              view.focus();
-            });
             return span;
           },
           { side: -1, ignoreSelection: true },
@@ -148,6 +134,28 @@ export function buildMathDecorationsPlugin(): Plugin<DecorationSet> {
     props: {
       decorations(state) {
         return mathDecorationsKey.getState(state);
+      },
+      // Click on the KaTeX render → drop the caret one step in from the
+      // closing `$` so the run becomes active and the source reveals.
+      // Doing this here (instead of on the widget DOM with mousedown +
+      // preventDefault) sidesteps a fight with ProseMirror's own click
+      // handling that was leaving the widget node-selected instead of
+      // moving the caret into the source.
+      handleClick(view, pos, event) {
+        const target = event.target as HTMLElement | null;
+        if (!target?.closest?.(".md-math-rendered")) return false;
+        const ranges = collectRanges(view.state);
+        for (const r of ranges) {
+          if (pos < r.from || pos > r.to) continue;
+          const caret = Math.max(r.to - 1, r.from + 1);
+          view.dispatch(
+            view.state.tr.setSelection(
+              TextSelection.create(view.state.doc, caret),
+            ),
+          );
+          return true;
+        }
+        return false;
       },
     },
   });

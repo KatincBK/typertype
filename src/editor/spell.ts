@@ -4,6 +4,8 @@ import type { EditorView } from "prosemirror-view";
 import type { Node } from "prosemirror-model";
 import { checkWord, onSpellChange } from "@/lib/spellChecker";
 import { MATH_INLINE_RE } from "./mathDecorations";
+import { EMOJI_INLINE_RE } from "./emojiDecorations";
+import { EMOJI_INDEX } from "./emoji";
 
 export interface SpellContextDetail {
   word: string;
@@ -23,12 +25,12 @@ export interface SpellContextDetail {
 export const spellPluginKey = new PluginKey<DecorationSet>("spell");
 
 // Block / inline node names whose textual content is *not* prose and
-// shouldn't get squiggles. Inline `$...$` math is *not* a node anymore —
-// the scanner carves those ranges out per-text-node below.
+// shouldn't get squiggles. Inline `$...$` math and `:shortcode:` emoji are
+// *not* nodes anymore — the scanner carves those ranges out per-text-node
+// below.
 const SKIP_NODE_TYPES = new Set([
   "code_block",
   "math_block",
-  "emoji",
   "footnote_ref",
   "toc",
   "horizontal_rule",
@@ -59,21 +61,27 @@ function scanDoc(doc: Node): DecorationSet {
 
     const text = node.text || "";
 
-    // Carve inline math ranges out — the LaTeX source is identifiers,
-    // not prose words.
-    const mathRanges: Array<[number, number]> = [];
+    // Carve inline math and known emoji shortcodes out — their text is
+    // identifiers, not prose.
+    const skipRanges: Array<[number, number]> = [];
     MATH_INLINE_RE.lastIndex = 0;
     for (const mm of text.matchAll(MATH_INLINE_RE)) {
       if (mm.index === undefined) continue;
-      mathRanges.push([mm.index, mm.index + mm[0].length]);
+      skipRanges.push([mm.index, mm.index + mm[0].length]);
     }
-    const inMath = (i: number) =>
-      mathRanges.some(([a, b]) => i >= a && i < b);
+    EMOJI_INLINE_RE.lastIndex = 0;
+    for (const em of text.matchAll(EMOJI_INLINE_RE)) {
+      if (em.index === undefined) continue;
+      if (!EMOJI_INDEX.has(em[1].toLowerCase())) continue;
+      skipRanges.push([em.index, em.index + em[0].length]);
+    }
+    const inSkip = (i: number) =>
+      skipRanges.some(([a, b]) => i >= a && i < b);
 
     let m: RegExpExecArray | null;
     WORD_SCAN.lastIndex = 0;
     while ((m = WORD_SCAN.exec(text)) !== null) {
-      if (inMath(m.index)) continue;
+      if (inSkip(m.index)) continue;
       const word = m[0];
       if (shouldSkipWord(word)) continue;
       if (checkWord(word)) continue;

@@ -1,45 +1,14 @@
 import { Plugin, PluginKey, TextSelection } from "prosemirror-state";
 import type { Command } from "prosemirror-state";
-import type { Node, NodeSpec, Schema } from "prosemirror-model";
-import type { EditorView, NodeView } from "prosemirror-view";
+import type { EditorView } from "prosemirror-view";
 
-// Adım 7 — Emoji as an inline atom node.
-// Stores both the original `:shortcode:` and the resolved unicode `char` so
-// the markdown source round-trips losslessly. Live conversion replaces a
-// completed `:shortcode:` in plain text with this node; the autocomplete
-// popup helps users discover shortcodes while typing.
+// Adım 7 (Faz F'de yeniden yazıldı) — Emoji.
+//
+// Emoji is no longer a node. The literal `:shortcode:` text lives in the
+// document; `emojiDecorations` renders the unicode glyph over it (Typora-
+// style source reveal). This file owns the data (EMOJI_DB / EMOJI_INDEX)
+// plus the autocomplete popup that drops the colon form into the doc.
 
-export const emojiNodeSpec: NodeSpec = {
-  group: "inline",
-  inline: true,
-  atom: true,
-  attrs: {
-    shortcode: { default: "" },
-    char: { default: "" },
-  },
-  parseDOM: [
-    {
-      tag: "span.emoji",
-      getAttrs: (el) => ({
-        shortcode: (el as HTMLElement).getAttribute("data-shortcode") || "",
-        char: el.textContent || "",
-      }),
-    },
-  ],
-  toDOM: (node) => [
-    "span",
-    {
-      class: "emoji",
-      "data-shortcode": node.attrs.shortcode,
-    },
-    node.attrs.char,
-  ],
-};
-
-// Curated subset of the most common emojis for autocomplete. The markdown
-// parser still uses markdown-it-emoji's full database (~1500 entries) so
-// `:less_common:` shortcodes coming in from a file still resolve — this list
-// only constrains what appears in the popup.
 export const EMOJI_DB: Array<{ shortcode: string; char: string; tags?: string[] }> = [
   { shortcode: "smile", char: "😄" },
   { shortcode: "smiley", char: "😃" },
@@ -157,7 +126,7 @@ export const EMOJI_DB: Array<{ shortcode: string; char: string; tags?: string[] 
   { shortcode: "checkered_flag", char: "🏁" },
 ];
 
-const EMOJI_INDEX = new Map(EMOJI_DB.map((e) => [e.shortcode, e]));
+export const EMOJI_INDEX = new Map(EMOJI_DB.map((e) => [e.shortcode, e]));
 
 function findEmojiMatches(query: string, max = 8): Array<(typeof EMOJI_DB)[number]> {
   const q = query.toLowerCase();
@@ -170,90 +139,6 @@ function findEmojiMatches(query: string, max = 8): Array<(typeof EMOJI_DB)[numbe
     if (prefix.length >= max) break;
   }
   return [...prefix, ...tagged].slice(0, max);
-}
-
-class EmojiInlineView implements NodeView {
-  dom: HTMLElement;
-
-  constructor(node: Node) {
-    this.dom = document.createElement("span");
-    this.dom.className = "emoji";
-    this.dom.contentEditable = "false";
-    this.dom.setAttribute("data-shortcode", node.attrs.shortcode);
-    this.dom.title = ":" + node.attrs.shortcode + ":";
-    this.dom.textContent = node.attrs.char;
-  }
-
-  update(node: Node) {
-    if (node.type.name !== "emoji") return false;
-    this.dom.setAttribute("data-shortcode", node.attrs.shortcode);
-    this.dom.title = ":" + node.attrs.shortcode + ":";
-    this.dom.textContent = node.attrs.char;
-    return true;
-  }
-}
-
-export function buildEmojiNodeView() {
-  return {
-    emoji: (node: Node) => new EmojiInlineView(node),
-  };
-}
-
-// Live conversion: text containing `:shortcode:` (where shortcode is in our
-// index) collapses into an emoji atom node. Runs after-the-fact on
-// completed shortcodes, so the user only ever sees the colon-form briefly.
-export function buildLiveEmojiPlugin(schema: Schema): Plugin {
-  return new Plugin({
-    appendTransaction(transactions, _oldState, newState) {
-      if (!transactions.some((tr) => tr.docChanged)) return null;
-      if (transactions.some((tr) => tr.getMeta("liveEmoji") === true)) return null;
-
-      const emojiType = schema.nodes.emoji;
-      if (!emojiType) return null;
-
-      const replacements: Array<{
-        from: number;
-        to: number;
-        shortcode: string;
-        char: string;
-      }> = [];
-
-      newState.doc.descendants((node, pos) => {
-        if (node.type.name === "code_block" || node.type.name === "math_block") {
-          return false;
-        }
-        if (!node.isText || !node.text) return;
-        if (node.marks.some((m) => m.type.name === "code")) return;
-
-        const re = /:([a-z0-9_+-]+):/gi;
-        for (const match of node.text.matchAll(re)) {
-          if (match.index === undefined) continue;
-          const found = EMOJI_INDEX.get(match[1].toLowerCase());
-          if (!found) continue;
-          replacements.push({
-            from: pos + match.index,
-            to: pos + match.index + match[0].length,
-            shortcode: found.shortcode,
-            char: found.char,
-          });
-        }
-      });
-
-      if (replacements.length === 0) return null;
-      replacements.sort((a, b) => b.from - a.from);
-
-      const tr = newState.tr;
-      tr.setMeta("liveEmoji", true);
-      for (const r of replacements) {
-        tr.replaceWith(
-          r.from,
-          r.to,
-          emojiType.create({ shortcode: r.shortcode, char: r.char }),
-        );
-      }
-      return tr;
-    },
-  });
 }
 
 // ---------- Autocomplete popup ----------
@@ -281,15 +166,16 @@ function commitEmoji(
   active: PopupActive,
   pick: (typeof EMOJI_DB)[number],
 ) {
-  const { schema } = view.state;
-  const emojiType = schema.nodes.emoji;
-  if (!emojiType) return;
-  const node = emojiType.create({ shortcode: pick.shortcode, char: pick.char });
-  view.dispatch(
-    view.state.tr
-      .replaceWith(active.from, active.to, node)
-      .scrollIntoView(),
-  );
+  // Drop the literal `:shortcode:` source into the doc — emojiDecorations
+  // will render the unicode glyph over it as soon as the caret moves out.
+  const text = ":" + pick.shortcode + ":";
+  const tr = view.state.tr.insertText(text, active.from, active.to);
+  // Park the caret at the end of the inserted source so the run renders
+  // immediately (the run is "active" while the caret is strictly inside).
+  const end = active.from + text.length;
+  tr.setSelection(TextSelection.create(tr.doc, end));
+  tr.scrollIntoView();
+  view.dispatch(tr);
   view.focus();
 }
 
@@ -441,8 +327,7 @@ export function buildEmojiPopupPlugin(): Plugin<PopupState> {
   });
 }
 
-// Helper: command to forcefully open the popup at the caret (for keymap
-// triggers later if we want a Ctrl+; binding etc.)
+// Helper: command to forcefully open the popup at the caret.
 export const triggerEmojiPopup: Command = (state, dispatch) => {
   if (!dispatch) return true;
   // Insert ":" so the input rule kicks in, leaving caret right after.

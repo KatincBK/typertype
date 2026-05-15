@@ -20,11 +20,8 @@ import { buildAutoPairPlugin } from "./autoPair";
 import { buildMathNodeViews } from "./math";
 import { buildMathDecorationsPlugin } from "./mathDecorations";
 import { CodeBlockView } from "./mermaid";
-import {
-  buildEmojiNodeView,
-  buildEmojiPopupPlugin,
-  buildLiveEmojiPlugin,
-} from "./emoji";
+import { buildEmojiPopupPlugin } from "./emoji";
+import { buildEmojiDecorationsPlugin } from "./emojiDecorations";
 import { buildTocNodeView, buildTocRefreshPlugin } from "./toc";
 import { buildFootnoteNodeView } from "./footnote";
 import { buildTablePlugins, buildTableToolbarPlugin } from "./tables";
@@ -255,13 +252,13 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       doc: markdownToDoc(initialMarkdown),
       plugins: [
         buildInputRules(schema),
-        // Inline `$...$` math is literal text; mathDecorations paints the
-        // KaTeX render over it and reveals the source when the caret enters
-        // the run. liveFormat itself carves math runs out of segment-mark
-        // reconciliation so a stray `^`/`~` inside math doesn't become a
-        // sup/sub marker.
+        // Inline `$...$` math and `:shortcode:` emoji are literal text;
+        // their decoration plugins paint the rendered form over the source
+        // and reveal it again when the caret enters the run. liveFormat
+        // carves math runs out of segment-mark reconciliation so a stray
+        // `^`/`~` inside math doesn't become a sup/sub marker.
         buildMathDecorationsPlugin(),
-        buildLiveEmojiPlugin(schema),
+        buildEmojiDecorationsPlugin(),
         buildLiveFormatPlugin(schema),
         // Typora-style reveal/hide of the literal `**` `*` … markers.
         buildMarkupVisibilityPlugin(),
@@ -285,7 +282,6 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
       state,
       nodeViews: {
         ...buildMathNodeViews(),
-        ...buildEmojiNodeView(),
         ...buildTocNodeView(),
         ...buildFootnoteNodeView(),
         ...buildImageNodeView(getDocPath),

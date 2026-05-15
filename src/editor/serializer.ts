@@ -172,9 +172,9 @@ function wrapTableCellsPlugin(md: MarkdownIt) {
 // the parsing markdown-it instance has every inline-formatting rule turned
 // OFF: `**x**`, `` `x` ``, `~~x~~`, `==x==`, `~x~`, `^x^` all flow through as
 // plain `text` tokens. `<u>` / `</u>` (and any stray inline HTML) become
-// literal text too. Inline `$...$` math is *also* literal — mathDecorations
-// renders it from the raw text. `link`, `image`, emoji, math_block,
-// footnote, table, [toc] stay first-class.
+// literal text too. Inline `$...$` math and `:shortcode:` emoji are *also*
+// literal — mathDecorations / emojiDecorations render them from the raw
+// text. `link`, `image`, math_block, footnote, table, [toc] stay first-class.
 function htmlInlineToTextPlugin(md: MarkdownIt) {
   md.core.ruler.after("inline", "html_inline_to_text", (state) => {
     for (const tok of state.tokens) {
@@ -187,7 +187,6 @@ function htmlInlineToTextPlugin(md: MarkdownIt) {
 }
 
 const mdParse = MarkdownIt({ html: true })
-  .use(markdownitEmoji)
   .use(markdownitFootnote)
   .use(mathMarkdownItPlugin)
   .use(tocMarkdownItPlugin)
@@ -304,13 +303,6 @@ const parser = new MarkdownParser(schema, mdParse, {
   },
   hardbreak: { node: "hard_break" },
   math_block: { block: "math_block", noCloseToken: true },
-  emoji: {
-    node: "emoji",
-    getAttrs: (tok) => ({
-      shortcode: tok.markup || "",
-      char: tok.content || "",
-    }),
-  },
   toc: { node: "toc" },
   // markdown-it-footnote stores the original label (e.g. "1", "typora") in
   // tok.meta.label and a numeric index in tok.meta.id. We round-trip the
@@ -432,14 +424,6 @@ const serializer = new MarkdownSerializer(
     math_block: (state, node) => {
       state.write("$$\n" + node.textContent + "\n$$");
       state.closeBlock(node);
-    },
-    emoji: (state, node) => {
-      // Round-trip the original :shortcode: form so the source stays stable
-      if (node.attrs.shortcode) {
-        state.write(":" + node.attrs.shortcode + ":");
-      } else {
-        state.write(node.attrs.char || "");
-      }
     },
     toc: (state, node) => {
       state.write("[toc]");

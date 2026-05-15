@@ -175,7 +175,7 @@ body,
   background: var(--bg-hover);
 }
 
-.app-help-btn {
+.app-icon-btn {
   appearance: none;
   background: transparent;
   color: var(--muted);
@@ -195,7 +195,7 @@ body,
   justify-content: center;
 }
 
-.app-help-btn:hover {
+.app-icon-btn:hover {
   background: var(--bg-hover);
   color: var(--fg);
 }

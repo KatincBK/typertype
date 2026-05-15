@@ -17,7 +17,8 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themeSepia": "Sepia",
-    "helpTitle": "Help"
+    "helpTitle": "Help",
+    "settingsTitle": "Settings"
   },
   "about": {
     "title": "About Typertype",

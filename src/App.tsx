@@ -747,7 +747,16 @@ function App() {
         </select>
         <button
           type="button"
-          className="app-help-btn"
+          className="app-icon-btn"
+          onClick={openSettings}
+          title={t("header.settingsTitle")}
+          aria-label={t("header.settingsTitle")}
+        >
+          ⚙
+        </button>
+        <button
+          type="button"
+          className="app-icon-btn"
           onClick={() => setAboutOpen(true)}
           title={t("header.helpTitle")}
           aria-label={t("header.helpTitle")}

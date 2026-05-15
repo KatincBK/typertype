@@ -6,6 +6,12 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "updater:default"
+    "updater:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "ms-settings:*" }
+      ]
+    }
   ]
 }

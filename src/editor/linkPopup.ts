@@ -296,6 +296,17 @@ export function buildLinkPopupPlugin(): Plugin<PopupState> {
         openUrl(active.href).catch((err) => logger.warn("openUrl failed:", err));
         return true;
       },
+      // Esc dismisses the popup. The input element has its own keydown
+      // handler for when it's focused; this catches the case where the
+      // popup is just hovering over the caret position (editor still
+      // owns focus) and the user wants it gone.
+      handleKeyDown(view, event) {
+        if (event.key !== "Escape") return false;
+        const popupState = linkPopupKey.getState(view.state);
+        if (!popupState?.active) return false;
+        view.dispatch(view.state.tr.setMeta(linkPopupKey, { type: "close" }));
+        return true;
+      },
     },
     view(editorView) {
       return new LinkPopupView(editorView);

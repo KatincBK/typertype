@@ -122,15 +122,15 @@ body,
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.5rem 1.5rem;
+  padding: 0.25rem 1.5rem;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg);
   flex-shrink: 0;
 }
 
 .app-logo {
-  height: 24px;
-  width: 24px;
+  height: 40px;
+  width: 40px;
   display: block;
   flex-shrink: 0;
   user-select: none;

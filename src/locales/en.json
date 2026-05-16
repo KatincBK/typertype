@@ -18,7 +18,9 @@
     "themeDark": "Dark",
     "themeSepia": "Sepia",
     "helpTitle": "Help",
-    "settingsTitle": "Settings"
+    "settingsTitle": "Settings",
+    "updateAvailable": "Update",
+    "updateTooltip": "New version available: v{{version}} — click to update"
   },
   "about": {
     "title": "About Typertype",

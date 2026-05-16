@@ -18,7 +18,9 @@
     "themeDark": "Koyu",
     "themeSepia": "Sepya",
     "helpTitle": "Yardım",
-    "settingsTitle": "Ayarlar"
+    "settingsTitle": "Ayarlar",
+    "updateAvailable": "Güncelle",
+    "updateTooltip": "Yeni sürüm var: v{{version}} — tıklayarak güncelle"
   },
   "about": {
     "title": "Typertype Hakkında",

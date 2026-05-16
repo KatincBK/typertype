@@ -39,7 +39,7 @@ import { buildHtmlDocument, type HtmlExportMode } from "@/lib/exportHtml";
 import { checkPandoc, exportViaPandoc } from "@/lib/exportPandoc";
 import { useSettings } from "@/lib/settings";
 import { getInitialArgs } from "@/lib/launchArgs";
-import { checkForUpdate } from "@/lib/updater";
+import { checkForUpdate, type UpdateInfo } from "@/lib/updater";
 import { addUserWord, ignoreWord, setSpellLanguage } from "@/lib/spellChecker";
 import { loadUserDict, persistUserDict } from "@/lib/userDict";
 import { printDocument } from "@/lib/print";
@@ -122,6 +122,9 @@ function App() {
   const settingsApi = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [availableUpdate, setAvailableUpdate] = useState<UpdateInfo | null>(
+    null,
+  );
 
   // FAZ 11 follow-up — image dialogs are driven by custom DOM events
   // bubbled out of the ImageView NodeView. We hold the per-event commit
@@ -449,29 +452,33 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // MVP-9 — auto-updater check on mount. The placeholder endpoint in
-  // tauri.conf.json resolves to nothing during dev, so this is a quiet
-  // no-op until a real release manifest exists. checkForUpdate swallows
-  // network / configuration errors, so it never disrupts startup.
+  // MVP-9 — auto-updater check on mount. When an update is available we
+  // surface it as a header button (see <header> below) instead of an
+  // intrusive confirm dialog, so the user can take it on their schedule.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const update = await checkForUpdate();
       if (cancelled || !update) return;
-      const ok = window.confirm(
-        i18n.t("updater.prompt", {
-          version: update.version,
-          body: update.body ?? "",
-        }),
-      );
-      if (!ok) return;
-      const { downloadAndInstallUpdate } = await import("@/lib/updater");
-      await downloadAndInstallUpdate();
+      setAvailableUpdate(update);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const handleInstallUpdate = useCallback(async () => {
+    if (!availableUpdate) return;
+    const ok = window.confirm(
+      i18n.t("updater.prompt", {
+        version: availableUpdate.version,
+        body: availableUpdate.body ?? "",
+      }),
+    );
+    if (!ok) return;
+    const { downloadAndInstallUpdate } = await import("@/lib/updater");
+    await downloadAndInstallUpdate();
+  }, [availableUpdate]);
 
   // MVP-5/8 — auto-save: when the doc is dirty AND has a path on disk,
   // write the latest content after the configured delay (default 2 s) of
@@ -724,13 +731,33 @@ function App() {
           alt={t("header.appName")}
           title={t("header.appName")}
         />
-        <span className="app-file" title={filePath ?? UNTITLED_LABEL}>
-          {fileLabel}
-          {dirty ? <span className="app-dirty"> ●</span> : null}
+        <span className="app-version" aria-hidden>
+          v{__APP_VERSION__}
         </span>
-        <span className="app-stats">
-          {t("header.characters", { count: currentMd.length })}
-        </span>
+        <div className="app-file-info">
+          <span className="app-file-name" title={filePath ?? UNTITLED_LABEL}>
+            {fileLabel}
+            {dirty ? <span className="app-dirty"> ●</span> : null}
+          </span>
+          <span className="app-file-sep" aria-hidden>
+            ·
+          </span>
+          <span className="app-file-chars">
+            {t("header.characters", { count: currentMd.length })}
+          </span>
+        </div>
+        {availableUpdate ? (
+          <button
+            type="button"
+            className="app-update-btn"
+            onClick={handleInstallUpdate}
+            title={t("header.updateTooltip", {
+              version: availableUpdate.version,
+            })}
+          >
+            {t("header.updateAvailable")}
+          </button>
+        ) : null}
         <ExportMenu onExport={handleExport} onPrint={handlePrint} />
         <select
           className="app-theme-select"

@@ -16,7 +16,7 @@ import { undoInputRule } from "prosemirror-inputrules";
 import type { Schema } from "prosemirror-model";
 import type { Command } from "prosemirror-state";
 import { blockTransformEnter, codeBlockExitOnEmptyLine } from "./blockEnter";
-import { backspaceEmptyPair } from "./autoPair";
+import { backspaceEmptyPair, listItemBackspaceOutdent } from "./autoPair";
 import {
   clearFormat,
   copyAsMarkdown,
@@ -100,7 +100,16 @@ export function buildKeymap(schema: Schema, overrides: Record<string, string> = 
   keys["Mod-z"] = registry.undo;
   keys["Shift-Mod-z"] = registry.redo;
   keys["Mod-y"] = registry.redo;
-  keys["Backspace"] = chainCommands(undoInputRule, backspaceEmptyPair);
+  // Backspace at the very start of a list item outdents it (Typora style)
+  // instead of letting baseKeymap's joinBackward pull it out as a loose,
+  // un-numbered continuation paragraph. Runs before keymap(baseKeymap) — when
+  // it handles the key, joinBackward never sees it; otherwise normal
+  // character deletion / joinBackward still applies.
+  keys["Backspace"] = chainCommands(
+    undoInputRule,
+    backspaceEmptyPair,
+    listItemBackspaceOutdent(schema),
+  );
 
   // Inline marks
   if (registry.toggleStrong) keys["Mod-b"] = registry.toggleStrong;

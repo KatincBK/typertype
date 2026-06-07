@@ -2,6 +2,7 @@ import { Plugin, TextSelection } from "prosemirror-state";
 import type { Command } from "prosemirror-state";
 import type { Schema } from "prosemirror-model";
 import { liftListItem } from "prosemirror-schema-list";
+import { joinTextblockBackward } from "prosemirror-commands";
 
 // Adım 5 — Auto-pair brackets. Quotes (' ") are deliberately excluded so
 // smartQuotes input rules can convert them to curly equivalents. Markdown
@@ -80,22 +81,30 @@ export const backspaceEmptyPair: Command = (state, dispatch) => {
 // Backspace at the very start of a list item's content. Without this the chain
 // falls through to baseKeymap's joinBackward, which in ordered/bullet lists
 // drags the item out as a loose, un-numbered continuation paragraph
-// (`1. abc\n\n   def`) — the cursor appears to jump to a lower line / lose its
-// number. Typora instead outdents the item one level: a nested item rejoins
-// its parent list, a top-level item becomes a plain paragraph. liftListItem
-// does exactly that. Only fires when the caret sits at the start of the FIRST
-// child of a list_item — mid-text Backspace still deletes a character.
+// (`1. abc\n\n   def`). Typora behaviour depends on whether the item is first
+// in its list:
+//   - FIRST item  → outdent one level (liftListItem): a nested item rejoins its
+//     parent list, a top-level item becomes a plain paragraph.
+//   - LATER item  → merge into the previous item as one tight paragraph
+//     (joinTextblockBackward). The earlier all-items-lift fix dropped these
+//     items onto a line below the list ("alt satıra geçiyor") instead.
+// Only fires when the caret sits at the start of the FIRST child of a
+// list_item — mid-text Backspace still deletes a character.
 export function listItemBackspaceOutdent(schema: Schema): Command {
   const listItem = schema.nodes.list_item;
   if (!listItem) return () => false;
   const lift = liftListItem(listItem);
-  return (state, dispatch) => {
+  return (state, dispatch, view) => {
     const { $from, empty } = state.selection;
     if (!empty) return false;
     if ($from.parentOffset !== 0) return false;
-    if ($from.depth < 1) return false;
+    if ($from.depth < 2) return false;
     if ($from.node($from.depth - 1).type !== listItem) return false;
     if ($from.index($from.depth - 1) !== 0) return false;
-    return lift(state, dispatch);
+    // First item in its (sub)list outdents; any later item joins upward.
+    if ($from.index($from.depth - 2) === 0) {
+      return lift(state, dispatch);
+    }
+    return joinTextblockBackward(state, dispatch, view);
   };
 }

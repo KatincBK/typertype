@@ -34,12 +34,22 @@ function apply(state: EditorState): string | null {
 }
 
 describe("listItemBackspaceOutdent", () => {
-  it("top-level middle item → becomes a plain paragraph (list splits)", () => {
-    expect(apply(caretAt("1. abc\n2. def", "def"))).toBe("1. abc\n\ndef");
+  it("top-level later item → merges into the previous item (tight)", () => {
+    // Typora joins the items instead of dropping 'def' onto a line below.
+    expect(apply(caretAt("1. abc\n2. def", "def"))).toBe("1. abcdef");
   });
 
-  it("nested item → outdents to the parent list level", () => {
+  it("third item also merges upward into the second", () => {
+    expect(apply(caretAt("1. a\n2. b\n3. c", "c"))).toBe("1. a\n2. bc");
+  });
+
+  it("nested first item → outdents to the parent list level", () => {
     expect(apply(caretAt("1. abc\n   1. def", "def"))).toBe("1. abc\n2. def");
+  });
+
+  it("nested later item → merges into the previous nested item", () => {
+    const out = apply(caretAt("1. abc\n   1. d\n   2. e", "e"));
+    expect(out).toBe("1. abc\n   1. de");
   });
 
   it("first top-level item → becomes a plain paragraph above the rest", () => {
@@ -48,9 +58,9 @@ describe("listItemBackspaceOutdent", () => {
     expect(out).toBe("abc\n\n1. def");
   });
 
-  it("bullet list item outdents the same way", () => {
+  it("bullet later item merges upward the same way", () => {
     // serializer normalises bullets to '*'
-    expect(apply(caretAt("- abc\n- def", "def"))).toBe("* abc\n\ndef");
+    expect(apply(caretAt("- abc\n- def", "def"))).toBe("* abcdef");
   });
 
   it("does nothing mid-text (caret not at item start)", () => {

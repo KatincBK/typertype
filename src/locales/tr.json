@@ -193,6 +193,9 @@
   "commands": {
     "linkPrompt": "Bağlantı URL'si:"
   },
+  "editor": {
+    "dragHandleTitle": "Yeniden sıralamak için sürükle"
+  },
   "link": {
     "popup": {
       "urlPlaceholder": "https://...",

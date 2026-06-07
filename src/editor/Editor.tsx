@@ -17,6 +17,7 @@ import { buildInputRules } from "./inputRules";
 import { buildLiveFormatPlugin } from "./liveFormat";
 import { buildMarkupVisibilityPlugin } from "./markupVisibility";
 import { buildAutoPairPlugin } from "./autoPair";
+import { buildListDragPlugin } from "./listDrag";
 import { buildMathNodeViews } from "./math";
 import { buildMathDecorationsPlugin } from "./mathDecorations";
 import { CodeBlockView } from "./mermaid";
@@ -264,6 +265,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         // Typora-style reveal/hide of the literal `**` `*` … markers.
         buildMarkupVisibilityPlugin(),
         buildAutoPairPlugin(),
+        buildListDragPlugin(),
         buildEmojiPopupPlugin(),
         buildLinkPopupPlugin(),
         buildTocRefreshPlugin(),

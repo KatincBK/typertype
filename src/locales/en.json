@@ -193,6 +193,9 @@
   "commands": {
     "linkPrompt": "Link URL:"
   },
+  "editor": {
+    "dragHandleTitle": "Drag to reorder"
+  },
   "link": {
     "popup": {
       "urlPlaceholder": "https://...",

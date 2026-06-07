@@ -1114,6 +1114,55 @@ body,
   margin: 0.6em 0;
 }
 
+/* Notion-style drag handle for list items (listDrag.ts). The grip is a widget
+ * child of the <li>; the li is the positioning context. Hidden until the row
+ * is hovered. */
+.editor .ProseMirror li {
+  position: relative;
+}
+
+.list-drag-handle {
+  position: absolute;
+  left: -1.45em;
+  top: 0.15em;
+  width: 1em;
+  text-align: center;
+  color: var(--muted);
+  cursor: grab;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  font-size: 0.85em;
+  line-height: 1.4;
+  border-radius: 4px;
+}
+
+.editor .ProseMirror li:hover > .list-drag-handle {
+  opacity: 0.55;
+}
+
+.list-drag-handle:hover {
+  opacity: 1 !important;
+  background: var(--bg-hover, rgba(127, 127, 127, 0.15));
+}
+
+.list-drag-handle:active {
+  cursor: grabbing;
+}
+
+.list-item-dragging {
+  opacity: 0.4;
+}
+
+/* Thin insertion line shown between list items while dragging. */
+.list-drop-indicator {
+  height: 2px;
+  margin: -1px 0;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
 .editor .ProseMirror hr {
   border: none;
   border-top: 1px solid var(--border);

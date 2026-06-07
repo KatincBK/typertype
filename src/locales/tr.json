@@ -163,7 +163,8 @@
     "noFolderSelected": "Henüz klasör seçilmedi",
     "outline": "İçindekiler",
     "noHeadings": "Henüz başlık yok",
-    "emptyFolder": "boş"
+    "emptyFolder": "boş",
+    "formatting": "Biçimlendirme"
   },
   "fileWatcher": {
     "externalChange": "Dosya dışarıda değişti. Diskten yeniden yüklensin mi? (Yerel değişiklikler kaybolacak.)"

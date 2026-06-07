@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { buildFormattingGuide } from "@/lib/formattingGuide";
 
 interface Props {
   open: boolean;
@@ -33,23 +34,7 @@ export function AboutDialog({ open, onClose }: Props) {
     ["Ctrl+P", t("about.shortcuts.print")],
   ];
 
-  const sample = t("about.formatting.sample");
-  const formatting: Array<{
-    cls: string;
-    label: string;
-    syntax: string;
-    shortcut?: string;
-  }> = [
-    { cls: "fmt-bold", label: t("about.formatting.bold"), syntax: `**${sample}**`, shortcut: "Ctrl+B" },
-    { cls: "fmt-italic", label: t("about.formatting.italic"), syntax: `*${sample}*`, shortcut: "Ctrl+I" },
-    { cls: "fmt-underline", label: t("about.formatting.underline"), syntax: `<u>${sample}</u>`, shortcut: "Ctrl+U" },
-    { cls: "fmt-strike", label: t("about.formatting.strikethrough"), syntax: `~~${sample}~~` },
-    { cls: "fmt-highlight", label: t("about.formatting.highlight"), syntax: `==${sample}==` },
-    { cls: "fmt-code", label: t("about.formatting.code"), syntax: `\`${sample}\``, shortcut: "Ctrl+Shift+`" },
-    { cls: "fmt-sub", label: t("about.formatting.subscript"), syntax: `~${sample}~` },
-    { cls: "fmt-sup", label: t("about.formatting.superscript"), syntax: `^${sample}^` },
-    { cls: "fmt-link", label: t("about.formatting.link"), syntax: `[${sample}](url)`, shortcut: "Ctrl+K" },
-  ];
+  const formatting = buildFormattingGuide(t);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>

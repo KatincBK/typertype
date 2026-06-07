@@ -163,7 +163,8 @@
     "noFolderSelected": "No folder selected yet",
     "outline": "Outline",
     "noHeadings": "No headings yet",
-    "emptyFolder": "empty"
+    "emptyFolder": "empty",
+    "formatting": "Formatting"
   },
   "fileWatcher": {
     "externalChange": "The file changed externally. Reload from disk? (Local changes will be lost.)"

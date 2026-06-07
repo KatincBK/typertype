@@ -5,6 +5,7 @@ import { basename } from "@/lib/fileIO";
 import { FileTree } from "./FileTree";
 import { Outline } from "./Outline";
 import { CollapsibleSection } from "./CollapsibleSection";
+import { buildFormattingGuide } from "@/lib/formattingGuide";
 
 interface Props {
   rootPath: string | null;
@@ -28,6 +29,7 @@ export function Sidebar({
   onJumpHeading,
 }: Props) {
   const { t } = useTranslation();
+  const formatting = buildFormattingGuide(t);
   return (
     <aside className="sidebar">
       {recents.length > 0 ? (
@@ -93,6 +95,21 @@ export function Sidebar({
         defaultOpen={true}
       >
         <Outline headings={headings} onJump={onJumpHeading} />
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title={t("sidebar.formatting")}
+        storageKey="sidebar.section.formatting"
+        defaultOpen={false}
+      >
+        <ul className="sidebar-format-guide">
+          {formatting.map((f) => (
+            <li key={f.cls}>
+              <span className={f.cls}>{f.label}</span>
+              <code>{f.syntax}</code>
+            </li>
+          ))}
+        </ul>
       </CollapsibleSection>
     </aside>
   );

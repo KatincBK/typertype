@@ -955,6 +955,33 @@ body,
   color: var(--accent);
 }
 
+/* Formatting cheatsheet — shares the .fmt-* preview classes with the About
+ * dialog. Compact two-column rows: styled effect name + its markdown syntax. */
+.sidebar-format-guide {
+  list-style: none;
+  margin: 0;
+  padding: 0 0.4rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sidebar-format-guide li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.sidebar-format-guide code {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* File tree */
 
 .file-tree-root-children {

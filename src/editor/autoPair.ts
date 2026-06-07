@@ -90,11 +90,20 @@ export const backspaceEmptyPair: Command = (state, dispatch) => {
 //     items onto a line below the list ("alt satıra geçiyor") instead.
 // Only fires when the caret sits at the start of the FIRST child of a
 // list_item — mid-text Backspace still deletes a character.
+//
+// NOTE: joinTextblockBackward is called WITHOUT the view on purpose. With a
+// view it gates on view.endOfTextblock("backward"), which the list drag-handle
+// widget (rendered just before each item's paragraph) makes return false — so
+// the join was silently falling through to baseKeymap's joinBackward, which
+// merges as a LOOSE second paragraph and parks the caret at the start of that
+// lower line ("alt satırdaki öncülün başına geçiyor"). Dropping the view makes
+// atBlockStart use the parentOffset===0 fallback we've already asserted, so the
+// tight upward merge always fires.
 export function listItemBackspaceOutdent(schema: Schema): Command {
   const listItem = schema.nodes.list_item;
   if (!listItem) return () => false;
   const lift = liftListItem(listItem);
-  return (state, dispatch, view) => {
+  return (state, dispatch) => {
     const { $from, empty } = state.selection;
     if (!empty) return false;
     if ($from.parentOffset !== 0) return false;
@@ -105,6 +114,6 @@ export function listItemBackspaceOutdent(schema: Schema): Command {
     if ($from.index($from.depth - 2) === 0) {
       return lift(state, dispatch);
     }
-    return joinTextblockBackward(state, dispatch, view);
+    return joinTextblockBackward(state, dispatch);
   };
 }

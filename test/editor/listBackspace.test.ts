@@ -33,7 +33,37 @@ function apply(state: EditorState): string | null {
   return ok ? out : null;
 }
 
+function applyState(state: EditorState): EditorState | null {
+  let next: EditorState | null = null;
+  const ok = cmd(state, (tr) => {
+    next = state.apply(tr);
+  });
+  return ok ? next : null;
+}
+
 describe("listItemBackspaceOutdent", () => {
+  // Guards the production path: the merge must be a TIGHT single paragraph with
+  // the caret at the junction — not joinBackward's loose second paragraph that
+  // parked the caret at the start of the line below ("alt satıra geçiyor"). The
+  // command must therefore call joinTextblockBackward without a view so the
+  // drag-handle widget can't veto it via endOfTextblock.
+  it("merges into a single (tight) paragraph with the caret at the junction", () => {
+    const next = applyState(caretAt("1. a\n2. b\n3. c\n4. d", "d"));
+    expect(next).not.toBeNull();
+    const state = next as EditorState;
+    // The third item now holds the merged text in ONE paragraph.
+    let merged: Node | null = null;
+    state.doc.descendants((node: Node) => {
+      if (node.type.name === "list_item" && node.textContent === "cd") merged = node;
+    });
+    expect(merged).not.toBeNull();
+    expect((merged as unknown as Node).childCount).toBe(1); // tight: no loose 2nd <p>
+    // Caret sits between 'c' and 'd', not at the start of a lower line.
+    const $c = state.doc.resolve(state.selection.from);
+    expect($c.parent.textContent).toBe("cd");
+    expect($c.parentOffset).toBe(1);
+  });
+
   it("top-level later item → merges into the previous item (tight)", () => {
     // Typora joins the items instead of dropping 'def' onto a line below.
     expect(apply(caretAt("1. abc\n2. def", "def"))).toBe("1. abcdef");

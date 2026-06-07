@@ -199,6 +199,10 @@
   "editor": {
     "dragHandleTitle": "Yeniden sıralamak için sürükle"
   },
+  "color": {
+    "title": "Yazı rengi",
+    "remove": "Rengi kaldır"
+  },
   "link": {
     "popup": {
       "urlPlaceholder": "https://...",

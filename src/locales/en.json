@@ -199,6 +199,10 @@
   "editor": {
     "dragHandleTitle": "Drag to reorder"
   },
+  "color": {
+    "title": "Text color",
+    "remove": "Remove color"
+  },
   "link": {
     "popup": {
       "urlPlaceholder": "https://...",

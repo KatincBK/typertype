@@ -115,6 +115,25 @@ export const schema = new Schema({
         return ["u", 0];
       },
     })
+    // Font color, applied via the right-click menu (a first-class mark like
+    // `link`, NOT the literal-text model — liveFormat leaves it alone because
+    // it isn't in MANAGED). Round-trips as Typora-style `<span style="color">`.
+    .addToEnd("textColor", {
+      attrs: { color: {} },
+      inclusive: false,
+      parseDOM: [
+        {
+          tag: "span[style]",
+          getAttrs: (dom) => {
+            const color = (dom as HTMLElement).style.color;
+            return color ? { color } : false;
+          },
+        },
+      ],
+      toDOM(mark) {
+        return ["span", { style: `color: ${mark.attrs.color}` }, 0];
+      },
+    })
     // Literal markdown syntax characters (`**` `*` `~~` `==` `` ` `` `~` `^`
     // `<u>` `</u>`) now live in the document as real, editable text. The
     // `markup` mark tags those characters so liveFormat can style them dimly

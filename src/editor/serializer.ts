@@ -186,6 +186,43 @@ function htmlInlineToTextPlugin(md: MarkdownIt) {
   });
 }
 
+// Font color (right-click menu) round-trips as `<span style="color:…">…</span>`.
+// Unlike the other inline markers it is NOT literal text — it's a first-class
+// `textColor` mark. We rewrite the span open/close html_inline tokens into
+// textColor_open / _close BEFORE html_inline_to_text would flatten them to
+// plain text. A depth counter keeps `</span>` matched to its colored opener so
+// unrelated spans (if any) fall through to literal text.
+const SPAN_OPEN_RE = /^<span\b[^>]*>$/i;
+const SPAN_CLOSE_RE = /^<\/span\s*>$/i;
+function spanColor(html: string): string | null {
+  const m = html.match(/\bcolor\s*:\s*([^;"']+)/i);
+  return m ? m[1].trim() : null;
+}
+function colorSpanPlugin(md: MarkdownIt) {
+  md.core.ruler.before("html_inline_to_text", "color_span_to_mark", (state) => {
+    for (const tok of state.tokens) {
+      if (tok.type !== "inline" || !tok.children) continue;
+      let depth = 0;
+      for (let i = 0; i < tok.children.length; i++) {
+        const c = tok.children[i];
+        if (c.type !== "html_inline") continue;
+        if (SPAN_OPEN_RE.test(c.content)) {
+          const color = spanColor(c.content);
+          if (color) {
+            const open = new Token("textColor_open", "span", 1);
+            open.attrSet("data-color", color);
+            tok.children[i] = open;
+            depth++;
+          }
+        } else if (SPAN_CLOSE_RE.test(c.content) && depth > 0) {
+          tok.children[i] = new Token("textColor_close", "span", -1);
+          depth--;
+        }
+      }
+    }
+  });
+}
+
 const mdParse = MarkdownIt({ html: true })
   .use(markdownitFootnote)
   .use(mathMarkdownItPlugin)
@@ -193,6 +230,7 @@ const mdParse = MarkdownIt({ html: true })
   .use(htmlImgPlugin)
   .use(wrapTableCellsPlugin)
   .use(htmlInlineToTextPlugin)
+  .use(colorSpanPlugin)
   .disable(["emphasis", "strikethrough", "backticks"]);
 
 // Render model — full markdown-it, used by the HTML export path
@@ -363,6 +401,11 @@ const parser = new MarkdownParser(schema, mdParse, {
       title: tok.attrGet("title") ?? null,
     }),
   },
+  // `<span style="color:…">` → textColor mark (see colorSpanPlugin).
+  textColor: {
+    mark: "textColor",
+    getAttrs: (tok) => ({ color: tok.attrGet("data-color") ?? "" }),
+  },
 });
 
 function escapeHtmlAttr(s: string): string {
@@ -458,6 +501,14 @@ const serializer = new MarkdownSerializer(
   {
     // `link` keeps the old consumed-marker model (Faz D migrates it).
     link: defaultMarkdownSerializer.marks.link,
+    // Font color writes Typora-style inline HTML.
+    textColor: {
+      open: (_state, mark) =>
+        `<span style="color: ${escapeHtmlAttr(String(mark.attrs.color))}">`,
+      close: "</span>",
+      mixable: false,
+      expelEnclosingWhitespace: true,
+    },
     em: EMPTY_MARK,
     strong: EMPTY_MARK,
     code: EMPTY_MARK,

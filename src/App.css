@@ -1453,3 +1453,58 @@ body,
   background: var(--border);
   margin: 4px 0;
 }
+
+/* Right-click font-color menu (ColorMenu.tsx). */
+.color-menu {
+  position: fixed;
+  z-index: 1300;
+  padding: 8px;
+  background: var(--bg-modal);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+}
+
+.color-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.color-menu-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+}
+
+.color-menu-swatch:hover {
+  transform: scale(1.12);
+}
+
+.color-menu-swatch.is-active {
+  border-color: var(--fg);
+}
+
+.color-menu-remove {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 5px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.color-menu-remove:hover {
+  background: var(--bg-soft);
+}

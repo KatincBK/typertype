@@ -47,6 +47,8 @@ import { loadSettings } from "@/lib/settings";
 import { getSampleDoc } from "@/lib/sampleDoc";
 import { SpellMenu } from "@/components/SpellMenu";
 import type { SpellContextDetail } from "@/editor/spell";
+import { ColorMenu } from "@/components/ColorMenu";
+import type { ColorContextDetail } from "@/editor/textColor";
 import {
   onFileChanged,
   unwatchFile,
@@ -151,6 +153,14 @@ function App() {
   } | null>(null);
   const spellRangeRef = useRef<{ from: number; to: number } | null>(null);
 
+  // Right-click font-color menu (textColor.ts bubbles the open event when the
+  // selection is non-empty).
+  const [colorMenu, setColorMenu] = useState<{
+    x: number;
+    y: number;
+    current: string | null;
+  } | null>(null);
+
   // FAZ 19 — drive UI language from settings; setAppLanguage flips
   // i18next's active resource bundle and updates the <html lang> attr.
   const appLang = settingsApi.settings.app.language;
@@ -186,6 +196,16 @@ function App() {
     }
     document.addEventListener("tylike:spell-context", onCtx);
     return () => document.removeEventListener("tylike:spell-context", onCtx);
+  }, []);
+
+  // Right-click on a selection → font-color menu.
+  useEffect(() => {
+    function onCtx(e: Event) {
+      const detail = (e as CustomEvent<ColorContextDetail>).detail;
+      setColorMenu({ x: detail.x, y: detail.y, current: detail.current });
+    }
+    document.addEventListener("tylike:color-context", onCtx);
+    return () => document.removeEventListener("tylike:color-context", onCtx);
   }, []);
 
   const handleSpellReplace = useCallback((replacement: string) => {
@@ -875,6 +895,15 @@ function App() {
         onAddToDict={handleSpellAddToDict}
         onIgnore={handleSpellIgnore}
         onClose={() => setSpellMenu(null)}
+      />
+      <ColorMenu
+        open={colorMenu !== null}
+        x={colorMenu?.x ?? 0}
+        y={colorMenu?.y ?? 0}
+        current={colorMenu?.current ?? null}
+        onPick={(c) => editorRef.current?.setTextColor(c)}
+        onRemove={() => editorRef.current?.setTextColor(null)}
+        onClose={() => setColorMenu(null)}
       />
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </div>

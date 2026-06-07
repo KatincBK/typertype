@@ -18,6 +18,7 @@ import { buildLiveFormatPlugin } from "./liveFormat";
 import { buildMarkupVisibilityPlugin } from "./markupVisibility";
 import { buildAutoPairPlugin } from "./autoPair";
 import { buildListDragPlugin } from "./listDrag";
+import { buildColorContextPlugin, applyTextColor } from "./textColor";
 import { buildMathNodeViews } from "./math";
 import { buildMathDecorationsPlugin } from "./mathDecorations";
 import { CodeBlockView } from "./mermaid";
@@ -75,6 +76,7 @@ export interface EditorHandle {
   replaceAll: (replacement: string) => void;
   insertImageFromDialog: () => void;
   replaceRange: (from: number, to: number, text: string) => void;
+  setTextColor: (color: string | null) => void;
 }
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
@@ -243,6 +245,12 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         view.dispatch(tr);
         view.focus();
       },
+      setTextColor(color) {
+        const view = viewRef.current;
+        if (!view) return;
+        applyTextColor(color)(view.state, view.dispatch);
+        view.focus();
+      },
     }),
     [],
   );
@@ -273,6 +281,7 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         buildTableToolbarPlugin(),
         ...buildTablePlugins(),
         buildImagePastePlugin(schema, getDocPath),
+        buildColorContextPlugin(),
         buildSpellPlugin(),
         buildFindPlugin(),
         buildKeymap(schema, overrides),

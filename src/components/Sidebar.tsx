@@ -13,6 +13,7 @@ interface Props {
   activeFilePath: string | null;
   headings: HeadingItem[];
   recents: string[];
+  collapsed?: boolean;
   onPickFolder: () => void;
   onFileClick: (path: string) => void;
   onJumpHeading: (index: number) => void;
@@ -24,6 +25,7 @@ export function Sidebar({
   activeFilePath,
   headings,
   recents,
+  collapsed = false,
   onPickFolder,
   onFileClick,
   onJumpHeading,
@@ -31,7 +33,11 @@ export function Sidebar({
   const { t } = useTranslation();
   const formatting = buildFormattingGuide(t);
   return (
-    <aside className="sidebar">
+    <aside
+      className={`sidebar${collapsed ? " is-collapsed" : ""}`}
+      inert={collapsed}
+      aria-hidden={collapsed || undefined}
+    >
       {recents.length > 0 ? (
         <CollapsibleSection
           title={t("sidebar.recents")}

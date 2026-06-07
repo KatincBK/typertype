@@ -164,7 +164,9 @@
     "outline": "Outline",
     "noHeadings": "No headings yet",
     "emptyFolder": "empty",
-    "formatting": "Formatting"
+    "formatting": "Formatting",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   },
   "fileWatcher": {
     "externalChange": "The file changed externally. Reload from disk? (Local changes will be lost.)"

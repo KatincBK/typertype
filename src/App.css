@@ -820,6 +820,59 @@ body,
   border-right: 1px solid var(--border-subtle);
   background: var(--bg-subtle);
   overflow: auto;
+  transition: width 0.18s ease, border-right-width 0.18s ease;
+}
+
+/* Collapsed — the divider toggle animates the panel to zero width. overflow
+ * hidden keeps the content from spilling / flashing a scrollbar mid-animation;
+ * `inert` (set in Sidebar.tsx) keeps it out of the tab order. */
+.sidebar.is-collapsed {
+  width: 0;
+  min-width: 0;
+  border-right-width: 0;
+  overflow: hidden;
+}
+
+/* Divider collapse/expand handle. A faint dot at the sidebar/editor seam that
+ * grows into a chevron on hover; it lives at the left edge of .app-main so it
+ * tracks the divider whether the panel is open or collapsed. */
+.sidebar-toggle-handle {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--muted);
+  color: transparent;
+  opacity: 0.35;
+  cursor: pointer;
+  overflow: hidden;
+  transition: width 0.15s ease, height 0.15s ease, border-radius 0.15s ease,
+    opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-toggle-handle:hover,
+.sidebar-toggle-handle:focus-visible {
+  width: 18px;
+  height: 46px;
+  border-radius: 9px;
+  opacity: 1;
+  background: var(--bg-hover);
+  color: var(--fg);
+  outline: none;
+}
+
+.sidebar-toggle-arrow {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .sidebar-section {

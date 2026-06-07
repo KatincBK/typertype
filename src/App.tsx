@@ -792,19 +792,30 @@ function App() {
         </button>
       </header>
       <div className="app-body">
-        {sidebarOpen ? (
-          <Sidebar
-            rootPath={rootPath}
-            tree={tree}
-            activeFilePath={filePath}
-            headings={headings}
-            recents={recents}
-            onPickFolder={handlePickFolder}
-            onFileClick={handleFileFromTree}
-            onJumpHeading={handleJumpHeading}
-          />
-        ) : null}
+        <Sidebar
+          rootPath={rootPath}
+          tree={tree}
+          activeFilePath={filePath}
+          headings={headings}
+          recents={recents}
+          collapsed={!sidebarOpen}
+          onPickFolder={handlePickFolder}
+          onFileClick={handleFileFromTree}
+          onJumpHeading={handleJumpHeading}
+        />
         <main className="app-main">
+          <button
+            type="button"
+            className="sidebar-toggle-handle"
+            onClick={toggleSidebar}
+            title={sidebarOpen ? t("sidebar.collapse") : t("sidebar.expand")}
+            aria-label={sidebarOpen ? t("sidebar.collapse") : t("sidebar.expand")}
+            aria-expanded={sidebarOpen}
+          >
+            <span className="sidebar-toggle-arrow" aria-hidden="true">
+              {sidebarOpen ? "‹" : "›"}
+            </span>
+          </button>
           {findOpen ? (
             <FindBar
               mode={findMode}

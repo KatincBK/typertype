@@ -164,7 +164,9 @@
     "outline": "İçindekiler",
     "noHeadings": "Henüz başlık yok",
     "emptyFolder": "boş",
-    "formatting": "Biçimlendirme"
+    "formatting": "Biçimlendirme",
+    "collapse": "Kenar çubuğunu daralt",
+    "expand": "Kenar çubuğunu genişlet"
   },
   "fileWatcher": {
     "externalChange": "Dosya dışarıda değişti. Diskten yeniden yüklensin mi? (Yerel değişiklikler kaybolacak.)"

@@ -201,7 +201,10 @@
   },
   "color": {
     "title": "Text color",
-    "remove": "Remove color"
+    "remove": "Remove color",
+    "copy": "Copy",
+    "cut": "Cut",
+    "paste": "Paste"
   },
   "link": {
     "popup": {

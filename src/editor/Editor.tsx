@@ -77,6 +77,9 @@ export interface EditorHandle {
   insertImageFromDialog: () => void;
   replaceRange: (from: number, to: number, text: string) => void;
   setTextColor: (color: string | null) => void;
+  copySelection: () => void;
+  cutSelection: () => void;
+  pasteClipboard: () => void;
 }
 
 export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
@@ -250,6 +253,38 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(function Editor(
         if (!view) return;
         applyTextColor(color)(view.state, view.dispatch);
         view.focus();
+      },
+      // Copy / Cut route through the browser's clipboard event so ProseMirror's
+      // own copy serialization runs (markdown + HTML), matching Ctrl+C/X. focus
+      // first so the DOM selection is restored after the menu took focus.
+      copySelection() {
+        const view = viewRef.current;
+        if (!view || view.state.selection.empty) return;
+        view.focus();
+        document.execCommand("copy");
+      },
+      cutSelection() {
+        const view = viewRef.current;
+        if (!view || view.state.selection.empty) return;
+        view.focus();
+        document.execCommand("cut");
+      },
+      // Paste reads the clipboard text and inserts it at the selection. (Rich
+      // execCommand("paste") is blocked in the webview; text round-trips through
+      // liveFormat so pasted markdown still renders.)
+      pasteClipboard() {
+        const view = viewRef.current;
+        if (!view) return;
+        view.focus();
+        void navigator.clipboard
+          .readText()
+          .then((text) => {
+            const v = viewRef.current;
+            if (!v || !text) return;
+            const { from, to } = v.state.selection;
+            v.dispatch(v.state.tr.insertText(text, from, to).scrollIntoView());
+          })
+          .catch(() => {});
       },
     }),
     [],

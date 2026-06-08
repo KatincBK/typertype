@@ -935,6 +935,9 @@ function App() {
         current={colorMenu?.current ?? null}
         onPick={(c) => editorRef.current?.setTextColor(c)}
         onRemove={() => editorRef.current?.setTextColor(null)}
+        onCopy={() => editorRef.current?.copySelection()}
+        onCut={() => editorRef.current?.cutSelection()}
+        onPaste={() => editorRef.current?.pasteClipboard()}
         onClose={() => setColorMenu(null)}
       />
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />

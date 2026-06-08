@@ -1243,6 +1243,18 @@ body,
   pointer-events: none;
 }
 
+/* While a grip drag is live (pointer-driven), force the grabbing cursor
+   everywhere and suppress text selection so dragging over the document doesn't
+   start a selection. */
+body.list-dragging,
+body.list-dragging * {
+  cursor: grabbing !important;
+}
+
+body.list-dragging .ProseMirror {
+  user-select: none;
+}
+
 .editor .ProseMirror hr {
   border: none;
   border-top: 1px solid var(--border);
@@ -1491,13 +1503,14 @@ body,
   border-color: var(--fg);
 }
 
-.color-menu-remove {
+.color-menu-item {
   display: block;
   width: 100%;
-  margin-top: 8px;
+  margin-top: 2px;
   padding: 5px 8px;
+  text-align: left;
   background: transparent;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 4px;
   color: inherit;
   font: inherit;
@@ -1505,6 +1518,16 @@ body,
   cursor: pointer;
 }
 
-.color-menu-remove:hover {
+.color-menu-item:first-of-type {
+  margin-top: 8px;
+}
+
+.color-menu-item:hover {
   background: var(--bg-soft);
+}
+
+.color-menu-sep {
+  height: 1px;
+  margin: 6px 2px;
+  background: var(--border);
 }

@@ -201,7 +201,10 @@
   },
   "color": {
     "title": "Yazı rengi",
-    "remove": "Rengi kaldır"
+    "remove": "Rengi kaldır",
+    "copy": "Kopyala",
+    "cut": "Kes",
+    "paste": "Yapıştır"
   },
   "link": {
     "popup": {

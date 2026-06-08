@@ -6,16 +6,16 @@ import type { Node as PMNode } from "prosemirror-model";
 import i18n from "@/lib/i18n";
 
 // Notion-style drag handle for list items. A ⠿ grip appears to the left of
-// each list item on hover; dragging it reorders the item among its siblings
-// in the SAME list. Other block types are intentionally out of scope — only
-// list items get a handle (user decision: "sadece liste maddeleri").
+// each list item on hover; dragging it reorders the item among its siblings in
+// the SAME list. Other block types are intentionally out of scope (user
+// decision: "sadece liste maddeleri").
 //
-// The drag SOURCE is tracked in a plugin-local ref, not in plugin state, so
-// `dragstart` never dispatches a transaction. Dispatching there mutates the
-// dragged element's DOM (the dim decoration) and Chromium responds by
-// cancelling the native drag — which made the item grabbable but impossible to
-// drop anywhere. Only the drop indicator lives in plugin state, updated on
-// `dragover` where a dispatch is safe because the drag is already live.
+// The reorder runs on POINTER events (mousedown on the grip → mousemove →
+// mouseup), NOT the native HTML5 drag-and-drop API. Native drag inside a
+// contentEditable host fights ProseMirror's own drag handling and the browser
+// kept showing a "not-allowed" cursor and refusing the drop. Driving it with
+// plain mouse events lets us own the cursor (CSS `body.list-dragging`), the
+// drop indicator, and the final move transaction with no browser arbitration.
 
 export const listDragKey = new PluginKey<ListDragState>("listDrag");
 
@@ -56,15 +56,16 @@ export function moveListItem(
   return tr.scrollIntoView();
 }
 
-// Resolve the pointer position to a drop target: the sibling list_item under
-// the cursor, with before/after chosen by the item's vertical midpoint. Drops
-// are constrained to the dragged item's own list.
-function dropTargetFromEvent(
+// Resolve a pointer position to a drop target: the sibling list_item under the
+// cursor, with before/after chosen by the item's vertical midpoint. Drops are
+// constrained to the dragged item's own list.
+function dropTargetFromPoint(
   view: EditorView,
-  event: DragEvent,
+  clientX: number,
+  clientY: number,
   draggingPos: number,
 ): DropTarget | null {
-  const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+  const coords = view.posAtCoords({ left: clientX, top: clientY });
   if (!coords) return null;
   const $pos = view.state.doc.resolve(coords.pos);
   const draggedParent = view.state.doc.resolve(draggingPos).before();
@@ -77,7 +78,7 @@ function dropTargetFromEvent(
       let side: "before" | "after" = "after";
       if (dom instanceof HTMLElement) {
         const rect = dom.getBoundingClientRect();
-        side = event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+        side = clientY < rect.top + rect.height / 2 ? "before" : "after";
       }
       return { pos: itemPos, side };
     }
@@ -92,41 +93,99 @@ function sameTarget(a: DropTarget | null, b: DropTarget | null): boolean {
 }
 
 export function buildListDragPlugin(): Plugin<ListDragState> {
-  // Live drag source position (before the dragged list_item), or null. Held
-  // outside plugin state precisely so dragstart can stay dispatch-free.
-  let dragSource: number | null = null;
+  // Live drag state, held in the plugin closure (not plugin state) so the grip
+  // mousedown handler and the document-level move/up handlers share it without
+  // round-tripping through transactions.
+  let activeView: EditorView | null = null;
+  let dragging: number | null = null; // source list_item position, or null
+  let lastTarget: DropTarget | null = null;
+
+  const cleanupListeners = () => {
+    document.removeEventListener("mousemove", onMouseMove, true);
+    document.removeEventListener("mouseup", onMouseUp, true);
+    document.removeEventListener("keydown", onKeyDown, true);
+    document.body.classList.remove("list-dragging");
+  };
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (dragging == null || !activeView) return;
+    const target = dropTargetFromPoint(activeView, e.clientX, e.clientY, dragging);
+    if (!sameTarget(lastTarget, target)) {
+      lastTarget = target;
+      activeView.dispatch(
+        activeView.state.tr.setMeta(listDragKey, {
+          type: "over",
+          target,
+          source: dragging,
+        }),
+      );
+    }
+  };
+
+  const endDrag = (commit: boolean) => {
+    const view = activeView;
+    const src = dragging;
+    const target = lastTarget;
+    cleanupListeners();
+    activeView = null;
+    dragging = null;
+    lastTarget = null;
+    if (!view) return;
+    if (commit && src != null && target) {
+      const tr = moveListItem(view.state, src, target);
+      if (tr) {
+        tr.setMeta(listDragKey, { type: "end" });
+        view.dispatch(tr);
+        return;
+      }
+    }
+    view.dispatch(view.state.tr.setMeta(listDragKey, { type: "end" }));
+  };
+
+  const onMouseUp = () => endDrag(true);
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      endDrag(false); // cancel — leave the list as it was
+    }
+  };
+
+  const startDrag = (view: EditorView, itemPos: number) => {
+    activeView = view;
+    dragging = itemPos;
+    lastTarget = null;
+    document.body.classList.add("list-dragging");
+    document.addEventListener("mousemove", onMouseMove, true);
+    document.addEventListener("mouseup", onMouseUp, true);
+    document.addEventListener("keydown", onKeyDown, true);
+    // Dim the grabbed item right away (safe: pointer-driven, so unlike the old
+    // native-drag handler this dispatch can't cancel a browser drag).
+    view.dispatch(
+      view.state.tr.setMeta(listDragKey, {
+        type: "over",
+        target: null,
+        source: itemPos,
+      }),
+    );
+  };
 
   const renderHandle = (view: EditorView, getPos: () => number | undefined) => {
     const dom = document.createElement("span");
     dom.className = "list-drag-handle";
     dom.setAttribute("contenteditable", "false");
-    dom.setAttribute("draggable", "true");
     dom.setAttribute("aria-hidden", "true");
     dom.title = i18n.t("editor.dragHandleTitle");
     dom.textContent = "⠿"; // ⠿
 
-    // Stop PM from moving the caret / selecting when the grip is grabbed, but
-    // leave the native drag intact (don't preventDefault on mousedown).
-    dom.addEventListener("mousedown", (e) => e.stopPropagation());
-
-    dom.addEventListener("dragstart", (e) => {
+    dom.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
       const widgetPos = getPos();
       if (widgetPos == null) return;
-      dragSource = widgetPos - 1; // position before the list_item node
-      e.stopPropagation(); // don't let PM's own dragstart claim this
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = "move";
-        // Firefox refuses to start a drag without data on the transfer.
-        e.dataTransfer.setData("text/plain", "");
-      }
-      // NB: deliberately no view.dispatch here — see file header.
-    });
-
-    dom.addEventListener("dragend", () => {
-      dragSource = null;
-      if (listDragKey.getState(view.state)?.dropTarget != null) {
-        view.dispatch(view.state.tr.setMeta(listDragKey, { type: "end" }));
-      }
+      // Prevent the caret from moving / text from being selected, and keep
+      // ProseMirror's own mousedown handling from firing for the grip.
+      e.preventDefault();
+      e.stopPropagation();
+      startDrag(view, widgetPos - 1); // position before the list_item node
     });
 
     return dom;
@@ -214,53 +273,15 @@ export function buildListDragPlugin(): Plugin<ListDragState> {
         }
         return extra.length ? ps.handles.add(state.doc, extra) : ps.handles;
       },
-      handleDOMEvents: {
-        dragover(view, event) {
-          if (dragSource == null) return false;
-          const target = dropTargetFromEvent(view, event, dragSource);
-          if (target) {
-            event.preventDefault();
-            if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-          }
-          const ps = listDragKey.getState(view.state);
-          if (ps && !sameTarget(ps.dropTarget, target)) {
-            view.dispatch(
-              view.state.tr.setMeta(listDragKey, {
-                type: "over",
-                target,
-                source: dragSource,
-              }),
-            );
-          }
-          return false;
+    },
+    view() {
+      return {
+        destroy() {
+          // Tear down any drag still in progress when the editor unmounts.
+          if (dragging != null) endDrag(false);
+          cleanupListeners();
         },
-        drop(view, event) {
-          if (dragSource == null) return false;
-          event.preventDefault();
-          const ps = listDragKey.getState(view.state);
-          const target =
-            ps?.dropTarget ?? dropTargetFromEvent(view, event, dragSource);
-          const src = dragSource;
-          dragSource = null;
-          if (target) {
-            const tr = moveListItem(view.state, src, target);
-            if (tr) {
-              tr.setMeta(listDragKey, { type: "end" });
-              view.dispatch(tr);
-              return true;
-            }
-          }
-          view.dispatch(view.state.tr.setMeta(listDragKey, { type: "end" }));
-          return true;
-        },
-        dragend(view) {
-          dragSource = null;
-          if (listDragKey.getState(view.state)?.dropTarget != null) {
-            view.dispatch(view.state.tr.setMeta(listDragKey, { type: "end" }));
-          }
-          return false;
-        },
-      },
+      };
     },
   });
 }

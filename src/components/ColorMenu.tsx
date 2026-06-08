@@ -9,6 +9,9 @@ interface Props {
   current: string | null;
   onPick: (color: string) => void;
   onRemove: () => void;
+  onCopy: () => void;
+  onCut: () => void;
+  onPaste: () => void;
   onClose: () => void;
 }
 
@@ -26,7 +29,18 @@ const PALETTE = [
   "#9c36b5",
 ];
 
-export function ColorMenu({ open, x, y, current, onPick, onRemove, onClose }: Props) {
+export function ColorMenu({
+  open,
+  x,
+  y,
+  current,
+  onPick,
+  onRemove,
+  onCopy,
+  onCut,
+  onPaste,
+  onClose,
+}: Props) {
   const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -84,7 +98,7 @@ export function ColorMenu({ open, x, y, current, onPick, onRemove, onClose }: Pr
       </div>
       <button
         type="button"
-        className="color-menu-remove"
+        className="color-menu-item"
         role="menuitem"
         onClick={() => {
           onRemove();
@@ -92,6 +106,40 @@ export function ColorMenu({ open, x, y, current, onPick, onRemove, onClose }: Pr
         }}
       >
         {t("color.remove")}
+      </button>
+      <div className="color-menu-sep" role="separator" />
+      <button
+        type="button"
+        className="color-menu-item"
+        role="menuitem"
+        onClick={() => {
+          onCopy();
+          onClose();
+        }}
+      >
+        {t("color.copy")}
+      </button>
+      <button
+        type="button"
+        className="color-menu-item"
+        role="menuitem"
+        onClick={() => {
+          onCut();
+          onClose();
+        }}
+      >
+        {t("color.cut")}
+      </button>
+      <button
+        type="button"
+        className="color-menu-item"
+        role="menuitem"
+        onClick={() => {
+          onPaste();
+          onClose();
+        }}
+      >
+        {t("color.paste")}
       </button>
     </div>
   );

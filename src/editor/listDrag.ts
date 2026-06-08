@@ -56,34 +56,45 @@ export function moveListItem(
   return tr.scrollIntoView();
 }
 
-// Resolve a pointer position to a drop target: the sibling list_item under the
-// cursor, with before/after chosen by the item's vertical midpoint. Drops are
-// constrained to the dragged item's own list.
-function dropTargetFromPoint(
+// Resolve a pointer position to a drop target purely from its VERTICAL position
+// (clientY) — clientX is ignored on purpose so a drag straight down the left
+// margin (where the grip lives) still lands, instead of only registering over
+// the thin strip of text. We scan the dragged item's own sibling list_items and
+// pick the one whose rect is nearest clientY, with before/after by its midpoint.
+// Scanning only same-list siblings keeps drops constrained to that list, and
+// clamps naturally to the first / last item above-all / below-all.
+function dropTargetByY(
   view: EditorView,
-  clientX: number,
   clientY: number,
   draggingPos: number,
 ): DropTarget | null {
-  const coords = view.posAtCoords({ left: clientX, top: clientY });
-  if (!coords) return null;
-  const $pos = view.state.doc.resolve(coords.pos);
-  const draggedParent = view.state.doc.resolve(draggingPos).before();
+  const $dragged = view.state.doc.resolve(draggingPos);
+  const listNode = $dragged.parent;
+  const contentStart = $dragged.start();
 
-  for (let d = $pos.depth; d > 0; d--) {
-    if ($pos.node(d).type.name === "list_item") {
-      const itemPos = $pos.before(d);
-      if (view.state.doc.resolve(itemPos).before() !== draggedParent) return null;
-      const dom = view.nodeDOM(itemPos);
-      let side: "before" | "after" = "after";
-      if (dom instanceof HTMLElement) {
-        const rect = dom.getBoundingClientRect();
-        side = clientY < rect.top + rect.height / 2 ? "before" : "after";
-      }
-      return { pos: itemPos, side };
+  let best: DropTarget | null = null;
+  let bestDist = Infinity;
+  listNode.forEach((child, offset) => {
+    if (child.type.name !== "list_item") return;
+    const itemPos = contentStart + offset;
+    const dom = view.nodeDOM(itemPos);
+    if (!(dom instanceof HTMLElement)) return;
+    const rect = dom.getBoundingClientRect();
+    const dist =
+      clientY < rect.top
+        ? rect.top - clientY
+        : clientY > rect.bottom
+          ? clientY - rect.bottom
+          : 0;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = {
+        pos: itemPos,
+        side: clientY < rect.top + rect.height / 2 ? "before" : "after",
+      };
     }
-  }
-  return null;
+  });
+  return best;
 }
 
 function sameTarget(a: DropTarget | null, b: DropTarget | null): boolean {
@@ -109,7 +120,7 @@ export function buildListDragPlugin(): Plugin<ListDragState> {
 
   const onMouseMove = (e: MouseEvent) => {
     if (dragging == null || !activeView) return;
-    const target = dropTargetFromPoint(activeView, e.clientX, e.clientY, dragging);
+    const target = dropTargetByY(activeView, e.clientY, dragging);
     if (!sameTarget(lastTarget, target)) {
       lastTarget = target;
       activeView.dispatch(

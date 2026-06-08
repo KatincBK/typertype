@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { markdownToDoc, docToMarkdown } from "@/editor/serializer";
-import { schema } from "@/editor/schema";
 import { applyTextColor, currentTextColor } from "@/editor/textColor";
 
 function colorOf(doc: Node, word: string): string | null {

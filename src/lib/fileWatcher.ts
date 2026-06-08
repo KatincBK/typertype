@@ -30,6 +30,22 @@ export async function unwatchFile(): Promise<void> {
   }
 }
 
+// Decide whether an incoming watcher payload is the echo of one of OUR OWN
+// writes — in which case the renderer must NOT prompt "file changed
+// externally". It's ours when the content matches the in-memory saved baseline
+// (`savedMd`), or any recently written content. The latter closes a race: the
+// watcher event can fire before React's `setSavedMd(content)` has propagated to
+// the listener, so a comparison against `savedMd` alone occasionally let our
+// own save through as a spurious external change. Callers record every write
+// into `recentWrites` synchronously, before the async write resolves.
+export function isOwnWrite(
+  incoming: string,
+  savedMd: string,
+  recentWrites: readonly string[],
+): boolean {
+  return incoming === savedMd || recentWrites.includes(incoming);
+}
+
 export async function onFileChanged(
   handler: (payload: FileChangedPayload) => void,
 ): Promise<UnlistenFn> {

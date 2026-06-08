@@ -50,6 +50,7 @@ import type { SpellContextDetail } from "@/editor/spell";
 import { ColorMenu } from "@/components/ColorMenu";
 import type { ColorContextDetail } from "@/editor/textColor";
 import {
+  isOwnWrite,
   onFileChanged,
   unwatchFile,
   watchFile,
@@ -278,6 +279,22 @@ function App() {
     loadFile(opened.path, opened.content);
   }, [confirmDiscardDirty, loadFile]);
 
+  // Self-write filter for the file watcher: every content we write to the
+  // watched document is recorded here synchronously, BEFORE the await. The
+  // watcher can emit its change event before our `setSavedMd(content)` state
+  // update propagates to the listener's ref, so comparing the incoming disk
+  // content against `savedMd` alone raced and occasionally surfaced a spurious
+  // "file changed externally" prompt. A short ring (one save can emit several
+  // watcher events; manual + auto-save + blur writes can overlap) lets the
+  // watcher recognise its own echo regardless of React state timing.
+  const lastWrittenRef = useRef<string[]>([]);
+  const rememberWrite = useCallback((content: string) => {
+    const ring = lastWrittenRef.current;
+    if (ring[ring.length - 1] === content) return;
+    ring.push(content);
+    if (ring.length > 8) ring.shift();
+  }, []);
+
   const handleSave = useCallback(async () => {
     let target = filePath;
     if (!target) {
@@ -287,24 +304,26 @@ function App() {
       target = await pickSavePath(i18n.t("common.untitled") + ".md");
       if (!target) return;
     }
+    rememberWrite(currentMd);
     const ok = await safeSaveFile(target, currentMd);
     if (!ok) return;
     setFilePath(target);
     setSavedMd(currentMd);
     recordRecent(target);
-  }, [filePath, currentMd, recordRecent]);
+  }, [filePath, currentMd, recordRecent, rememberWrite]);
 
   const handleSaveAs = useCallback(async () => {
     const target = await pickSavePath(
       fileLabel.endsWith(".md") ? fileLabel : fileLabel + ".md",
     );
     if (!target) return;
+    rememberWrite(currentMd);
     const ok = await safeSaveFile(target, currentMd);
     if (!ok) return;
     setFilePath(target);
     setSavedMd(currentMd);
     recordRecent(target);
-  }, [fileLabel, currentMd, recordRecent]);
+  }, [fileLabel, currentMd, recordRecent, rememberWrite]);
 
   // MVP-3 — sidebar handlers
   const handlePickFolder = useCallback(async () => {
@@ -509,6 +528,7 @@ function App() {
     if (!recoveryHandled) return;
     if (!filePath || !dirty) return;
     const timer = setTimeout(async () => {
+      rememberWrite(currentMd);
       const ok = await safeSaveFile(filePath, currentMd);
       if (ok) {
         setSavedMd(currentMd);
@@ -516,7 +536,15 @@ function App() {
       }
     }, autoSaveMs);
     return () => clearTimeout(timer);
-  }, [recoveryHandled, filePath, currentMd, dirty, recordRecent, autoSaveMs]);
+  }, [
+    recoveryHandled,
+    filePath,
+    currentMd,
+    dirty,
+    recordRecent,
+    autoSaveMs,
+    rememberWrite,
+  ]);
 
   // MVP-5/8 — recovery snapshot: every N seconds of inactivity while dirty,
   // write the snapshot. When the doc goes clean (saved or matches disk),
@@ -546,6 +574,7 @@ function App() {
       const s = blurStateRef.current;
       if (!s.recoveryHandled || !s.dirty) return;
       if (s.filePath) {
+        rememberWrite(s.currentMd);
         void safeSaveFile(s.filePath, s.currentMd).then((ok) => {
           if (ok) setSavedMd(s.currentMd);
         });
@@ -554,7 +583,7 @@ function App() {
     }
     window.addEventListener("blur", onBlur);
     return () => window.removeEventListener("blur", onBlur);
-  }, []);
+  }, [rememberWrite]);
 
   // FAZ 7 — watch the active file on disk so external edits surface in
   // the editor. Mirror the latest doc state into a ref so the bound
@@ -586,9 +615,12 @@ function App() {
         return;
       }
       const incoming = payload.content;
-      // Filter our own writes: when we just saved, the disk content
-      // matches what we have in memory.
-      if (incoming === s.savedMd) return;
+      // Filter our own writes: the disk content matches the in-memory baseline,
+      // or it's the echo of a write we just issued (recorded synchronously in
+      // lastWrittenRef so it's recognised even before setSavedMd has propagated
+      // to this listener's ref — the race that produced spurious "file changed
+      // externally" prompts).
+      if (isOwnWrite(incoming, s.savedMd, lastWrittenRef.current)) return;
       const dirty = s.currentMd !== s.savedMd;
       if (dirty) {
         const ok = window.confirm(i18n.t("fileWatcher.externalChange"));

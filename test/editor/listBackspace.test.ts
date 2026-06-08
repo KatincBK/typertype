@@ -136,3 +136,51 @@ describe("listItemBackspaceOutdent", () => {
     expect(backspaceEmptyPair(state, undefined)).toBe(false);
   });
 });
+
+describe("backspaceEmptyPair", () => {
+  // Place the caret at the END of `word` (its last char's textblock end).
+  function caretAfter(md: string, word: string): EditorState {
+    const doc = markdownToDoc(md);
+    let pos = -1;
+    doc.descendants((node: Node, p: number) => {
+      if (node.isText && node.text === word && pos === -1) pos = p + node.nodeSize;
+    });
+    if (pos === -1) throw new Error(`text ${JSON.stringify(word)} not found`);
+    return EditorState.create({ doc, selection: TextSelection.create(doc, pos) });
+  }
+
+  // Regression: at the END of a list item the caret has no char after it, so
+  // `after` is undefined. The old `PAIRS[before] === after` check compared
+  // undefined === undefined and fired a destructive delete that crossed the
+  // block boundary, dropping the caret at the start of the NEXT item
+  // ("2." ↔ "Yemek" junction). It must now return false → native single-char
+  // deletion handles it.
+  it("does NOT fire at the end of a list item (no bracket pair)", () => {
+    expect(backspaceEmptyPair(caretAfter("1. ab\n2. cd", "ab"), undefined)).toBe(
+      false,
+    );
+  });
+
+  it("does NOT fire at the end of a plain paragraph", () => {
+    expect(backspaceEmptyPair(caretAfter("hello", "hello"), undefined)).toBe(false);
+  });
+
+  it("still deletes both chars of a real auto-paired bracket", () => {
+    // paragraph "()" with the caret between the brackets.
+    const doc = markdownToDoc("()");
+    let pos = -1;
+    doc.descendants((node: Node, p: number) => {
+      if (node.isText && node.text === "()") pos = p + 1; // between '(' and ')'
+    });
+    const state = EditorState.create({
+      doc,
+      selection: TextSelection.create(doc, pos),
+    });
+    let out: string | null = null;
+    const ok = backspaceEmptyPair(state, (tr) => {
+      out = docToMarkdown(state.apply(tr).doc);
+    });
+    expect(ok).toBe(true);
+    expect(out).toBe("");
+  });
+});

@@ -69,7 +69,15 @@ export const backspaceEmptyPair: Command = (state, dispatch) => {
   const offset = $from.parentOffset;
   const before = text[offset - 1];
   const after = text[offset];
-  if (before && PAIRS[before] === after) {
+  // Only fire for an actual auto-paired bracket: an opener immediately followed
+  // by its matching closer (e.g. `(|)`), deleting BOTH. `close` must be defined,
+  // which also guards the end-of-textblock case where `after` is undefined.
+  // The earlier bare `PAIRS[before] === after` compared `undefined === undefined`
+  // there and fired on a plain character at a block end, running a destructive
+  // delete($from.pos - 1, $from.pos + 1) that crossed the block boundary and
+  // dragged the caret into the next block (e.g. the next list item).
+  const close = before ? PAIRS[before] : undefined;
+  if (close !== undefined && close === after) {
     if (dispatch) {
       dispatch(state.tr.delete($from.pos - 1, $from.pos + 1));
     }

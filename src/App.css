@@ -1146,6 +1146,14 @@ body,
 .editor .ProseMirror {
   outline: none;
   min-height: 100%;
+  /* Scroll-past-end: leave room below the last line so it doesn't stay glued
+   * to the bottom edge while typing. Putting the gap on ProseMirror itself
+   * (not .editor) keeps it clickable — a click lands the caret at doc end.
+   * box-sizing: border-box folds this padding into min-height:100%, so short
+   * docs don't gain a needless scrollbar; the space only opens up once the
+   * content overflows the viewport. */
+  box-sizing: border-box;
+  padding-bottom: 30vh;
   font-family: var(
     --editor-font-family,
     system-ui,
